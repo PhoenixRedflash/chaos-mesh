@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:experimental
 
-FROM debian:buster-slim
+FROM debian:10.12-slim
 
 ENV DEBIAN_FRONTEND noninteractive
 
