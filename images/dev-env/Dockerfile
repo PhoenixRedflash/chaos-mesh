@@ -23,7 +23,7 @@ RUN go install github.com/matm/gocov-html@v0.0.0-20200509184451-71874e2e203b
 RUN go install github.com/swaggo/swag/cmd/swag@v1.6.7
 RUN go install github.com/onsi/ginkgo/ginkgo@v1.16.4
 
-FROM debian:buster-slim
+FROM debian:10.12-slim
 
 ENV DEBIAN_FRONTEND noninteractive
 
