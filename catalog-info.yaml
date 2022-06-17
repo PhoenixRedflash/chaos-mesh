@@ -1,7 +1,7 @@
 apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
-  name: Chaos Mesh
+  name: chaosmesh
   description: 
     A Chaos Engineering Platform for Kubernetes.
   links:
