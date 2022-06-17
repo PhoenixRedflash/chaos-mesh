@@ -1,0 +1,18 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: Chaos Mesh
+  description: 
+    A Chaos Engineering Platform for Kubernetes.
+  links:
+    - title: Website
+      url: https://github.com/PhoenixRedflash/chaos-mesh
+    - title: Documentation
+      url: https://chaos-mesh.org/docs/
+  annotations:
+    github.com/project-slug:  "PhoenixRedflash/chaos-mesh" 
+    backstage.io/techdocs-ref: dir:.
+spec:
+  type: service
+  owner: "Group:Phoenix"
+  lifecycle: experimental
