@@ -15,10 +15,12 @@ For more information and how-to, see [RFC: Keep A Changelog](https://github.com/
 - Add AArch64 support for TimeChaos [#3088](https://github.com/chaos-mesh/chaos-mesh/pull/3088)
 - Add integration test and link test on arm [#3177](https://github.com/chaos-mesh/chaos-mesh/pull/3177)
 - Add `spec.privateKey.rotationPolicy` to Certificates, to comply with requirements in cert-manager 1.8 [#3325](https://github.com/chaos-mesh/chaos-mesh/pull/3325)
+- Add `RemoteCluster` resource type [#3342](https://github.com/chaos-mesh/chaos-mesh/pull/3342)
+- Add `clusterregistry` package to help developers to develop multi-cluster reconciler [#3342](https://github.com/chaos-mesh/chaos-mesh/pull/3342)
 - Support `Suspend` in next generation `New Workflow`'s UI [#3254](https://github.com/chaos-mesh/chaos-mesh/pull/3254)
 - Add helm annotations for Artifact Hub [#3355](https://github.com/chaos-mesh/chaos-mesh/pull/3355)
 - Add implementation of blockchaos in chaos-daemon [#2907](https://github.com/chaos-mesh/chaos-mesh/pull/2907)
-- Bump chaos-tproxy to v0.5.1
+- Bump chaos-tproxy to v0.5.1 [#3412](https://github.com/chaos-mesh/chaos-mesh/pull/3412)
 
 ### Changed
 
@@ -33,6 +35,9 @@ For more information and how-to, see [RFC: Keep A Changelog](https://github.com/
 - Renamed namespace from chaos-testing to chaos-mesh [#3353](https://github.com/chaos-mesh/chaos-mesh/pull/3353)
 - Use ContainerSelector in kernel chaos [#3395](https://github.com/chaos-mesh/chaos-mesh/pull/3395)
 - Make possible to have more than one dns chaos server [#3381](https://github.com/chaos-mesh/chaos-mesh/pull/3381)
+- Helm charts: Relax allowedHostPaths in chaos-daemon PSP [#3350](https://github.com/chaos-mesh/chaos-mesh/pull/3350)
+- Run build image ci on self-hosted machine [#3429](https://github.com/chaos-mesh/chaos-mesh/pull/3429)
+- Simplified logic and add test case about finalizers. [#3422](https://github.com/chaos-mesh/chaos-mesh/pull/3422)
 
 ### Deprecated
 
