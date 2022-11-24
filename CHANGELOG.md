@@ -23,6 +23,7 @@ For more information and how-to, see [RFC: Keep A Changelog](https://github.com/
 - Use the next generation `New Workflow` UI by default [#3718](https://github.com/chaos-mesh/chaos-mesh/pull/3718)
 - StressChaos: Support cgroup v2 for docker and crio [#3698](https://github.com/chaos-mesh/chaos-mesh/pull/3698)
 - Bump go to v1.19.3 [#3770](https://github.com/chaos-mesh/chaos-mesh/pull/3770)
+- Change ubuntu version from latest to 20.04 [#3817](https://github.com/chaos-mesh/chaos-mesh/pull/3817)
 
 ### Deprecated
 
@@ -31,6 +32,8 @@ For more information and how-to, see [RFC: Keep A Changelog](https://github.com/
 ### Removed
 
 - Remove not needed file crd-v1beta1.yaml [#3807](https://github.com/chaos-mesh/chaos-mesh/pull/3807)
+
+- Remove useless kubebuilder comment in webhook [#3816](https://github.com/chaos-mesh/chaos-mesh/pull/3816)
 
 ### Fixed
 
