@@ -1,4 +1,4 @@
-FROM debian:buster-slim
+FROM debian:10.12-slim
 
 ARG HTTPS_PROXY
 ARG HTTP_PROXY
