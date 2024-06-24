@@ -24,7 +24,7 @@ RUN go install github.com/swaggo/swag/cmd/swag@v1.8.3
 RUN go install github.com/onsi/ginkgo/ginkgo@v1.16.4
 RUN go install github.com/apache/skywalking-eyes/cmd/license-eye@v0.2.0
 
-FROM debian:buster-slim
+FROM debian:10.12-slim
 
 ENV DEBIAN_FRONTEND noninteractive
 
