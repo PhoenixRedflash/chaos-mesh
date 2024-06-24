@@ -6,7 +6,7 @@ COPY . /src
 
 RUN go build -o test .
 
-FROM alpine:3.15
+FROM alpine:3.16
 
 COPY --from=0 /src/test /bin
 
