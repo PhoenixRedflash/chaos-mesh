@@ -46,20 +46,6 @@ def get_image_env(name, env):
     return env
 
 
-def get_image_project(name):
-    """
-    get the project name of the image
-    """
-    return get_image_env(name, "PROJECT")
-
-
-def get_image_registry(name):
-    """
-    get the registry of the image
-    """
-    return get_image_env(name, "REGISTRY")
-
-
 def get_image_tag(name):
     """
     get the tag of the image
@@ -78,11 +64,8 @@ def get_image_full_name(name):
     """
     get the full tag of an image
     """
-    project = get_image_project(name)
-    registry = get_image_registry(name)
     tag = get_image_tag(name)
-
-    return f"{registry}/{project}/{name}:{tag}"
+    return f"ghcr.io/chaos-mesh/{name}:{tag}"
 
 
 def pass_env_to_build_arg(cmd, arg_name):
@@ -145,7 +128,7 @@ def main():
                     "build",
                     "--load",
                     "--platform",
-                    os.getenv("TARGET_PLATFORM")]
+                    f"linux/{os.getenv('TARGET_PLATFORM')}"]
             else:
                 # This branch is split to avoid to use `buildx`, as `buildx` is
                 # not supported on some CI environment
@@ -156,7 +139,7 @@ def main():
             pass_env_to_build_arg(cmd, env_key)
 
         target_platform = utils.get_target_platform()
-        cmd += ["--build-arg", f"TARGET_PLATFORM={target_platform}"]
+        cmd += ["--build-arg", f"TARGET_PLATFORM={target_platform.platform}"]
         cmd += ["-t", image_full_name, args.path[0]]
     else:
         cmd = ["docker", "pull", image_full_name]

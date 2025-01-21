@@ -28,21 +28,20 @@ import {
   useTheme,
 } from '@mui/material'
 import { styled } from '@mui/material/styles'
-import api from 'api'
+import { applyAPIAuthentication, applyNSParam } from 'api/interceptors'
+import { Stale } from 'api/queryUtils'
 import Cookies from 'js-cookie'
+import { useGetCommonConfig } from 'openapi'
 import { useEffect, useState } from 'react'
-import { BrowserRouter as Router } from 'react-router-dom'
-import { Navigate, Route, Routes } from 'react-router-dom'
-import routes from 'routes'
+import { Outlet } from 'react-router-dom'
 
 import ConfirmDialog from '@ui/mui-extends/esm/ConfirmDialog'
 import Loading from '@ui/mui-extends/esm/Loading'
 
 import { useStoreDispatch, useStoreSelector } from 'store'
 
-import { setAlertOpen, setConfig, setConfirmOpen, setNameSpace, setTokenName, setTokens } from 'slices/globalStatus'
+import { setAlertOpen, setAuthOpen, setConfirmOpen, setNameSpace, setTokenName, setTokens } from 'slices/globalStatus'
 
-import Helmet from 'components/Helmet'
 import { TokenFormValues } from 'components/Token'
 
 import insertCommonStyle from 'lib/d3/insertCommonStyle'
@@ -73,7 +72,7 @@ const Root = styled(Box, {
 const TopContainer = () => {
   const theme = useTheme()
 
-  const { alert, alertOpen, confirm, confirmOpen } = useStoreSelector((state) => state.globalStatus)
+  const { alert, alertOpen, confirm, confirmOpen, authOpen } = useStoreSelector((state) => state.globalStatus)
 
   const dispatch = useStoreDispatch()
   const handleSnackClose = () => dispatch(setAlertOpen(false))
@@ -88,70 +87,64 @@ const TopContainer = () => {
   }
 
   const [loading, setLoading] = useState(true)
-  const [authOpen, setAuthOpen] = useState(false)
 
-  useEffect(() => {
-    /**
-     * Set authorization (RBAC token / GCP) for API use.
-     *
-     */
-    function setAuth() {
-      // GCP
-      const accessToken = Cookies.get('access_token')
-      const expiry = Cookies.get('expiry')
+  /**
+   * Set authorization (RBAC token / GCP) for API use.
+   *
+   */
+  function setAuth() {
+    // GCP
+    const accessToken = Cookies.get('access_token')
+    const expiry = Cookies.get('expiry')
 
-      if (accessToken && expiry) {
-        const token = {
-          accessToken,
-          expiry,
+    if (accessToken && expiry) {
+      const token = {
+        accessToken,
+        expiry,
+      }
+
+      applyAPIAuthentication(token as any)
+      dispatch(setTokenName('gcp'))
+
+      return
+    }
+
+    const token = LS.get('token')
+    const tokenName = LS.get('token-name')
+    const globalNamespace = LS.get('global-namespace')
+
+    if (token && tokenName) {
+      const tokens: TokenFormValues[] = JSON.parse(token)
+
+      applyAPIAuthentication(tokens.find(({ name }) => name === tokenName)!.token)
+      dispatch(setTokens(tokens))
+      dispatch(setTokenName(tokenName))
+    } else {
+      dispatch(setAuthOpen(true))
+    }
+
+    if (globalNamespace) {
+      applyNSParam(globalNamespace)
+      dispatch(setNameSpace(globalNamespace))
+    }
+  }
+
+  useGetCommonConfig({
+    query: {
+      staleTime: Stale.DAY,
+      onSuccess(data) {
+        if (data.security_mode) {
+          setAuth()
         }
 
-        api.auth.token(token as any)
-        dispatch(setTokenName('gcp'))
+        setLoading(false)
+      },
+    },
+  })
 
-        return
-      }
-
-      const token = LS.get('token')
-      const tokenName = LS.get('token-name')
-      const globalNamespace = LS.get('global-namespace')
-
-      if (token && tokenName) {
-        const tokens: TokenFormValues[] = JSON.parse(token)
-
-        api.auth.token(tokens.find(({ name }) => name === tokenName)!.token)
-        dispatch(setTokens(tokens))
-        dispatch(setTokenName(tokenName))
-      } else {
-        setAuthOpen(true)
-      }
-
-      if (globalNamespace) {
-        api.auth.namespace(globalNamespace)
-        dispatch(setNameSpace(globalNamespace))
-      }
-    }
-
-    /**
-     * Render different components according to server configuration.
-     *
-     */
-    function fetchServerConfig() {
-      api.common
-        .commonConfigGet()
-        .then(({ data }) => {
-          if (data.security_mode) {
-            setAuth()
-          }
-
-          dispatch(setConfig(data))
-        })
-        .finally(() => setLoading(false))
-    }
-
-    fetchServerConfig()
+  useEffect(() => {
     insertCommonStyle()
-  }, [dispatch])
+  }, [])
 
   const isTabletScreen = useMediaQuery(theme.breakpoints.down('md'))
   useEffect(() => {
@@ -161,7 +154,7 @@ const TopContainer = () => {
   }, [isTabletScreen])
 
   return (
-    <Router>
+    <>
       <CssBaseline />
       <Root open={openDrawer}>
         <Sidebar open={openDrawer} />
@@ -169,32 +162,13 @@ const TopContainer = () => {
           <Navbar openDrawer={openDrawer} handleDrawerToggle={handleDrawerToggle} />
           <Divider />
 
-          <Container maxWidth="xl" disableGutters sx={{ flexGrow: 1, p: 8 }}>
-            {loading ? (
-              <Loading />
-            ) : (
-              <Routes>
-                <Route path="/" element={<Navigate replace to="/dashboard" />} />
-                {!authOpen &&
-                  routes.map(({ path, element, title }) => (
-                    <Route
-                      key={path}
-                      path={path}
-                      element={
-                        <>
-                          <Helmet title={title} />
-                          {element}
-                        </>
-                      }
-                    />
-                  ))}
-              </Routes>
-            )}
+          <Container maxWidth="xl" disableGutters sx={{ flexGrow: 1, p: 6 }}>
+            {loading ? <Loading /> : <Outlet />}
           </Container>
         </Box>
       </Root>
 
-      <Auth open={authOpen} setOpen={setAuthOpen} />
+      <Auth open={authOpen} />
 
       <Portal>
         <Snackbar
@@ -221,7 +195,7 @@ const TopContainer = () => {
           onConfirm={confirm.handle}
         />
       </Portal>
-    </Router>
+    </>
   )
 }
 

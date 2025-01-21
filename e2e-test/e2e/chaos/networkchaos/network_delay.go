@@ -20,7 +20,7 @@ import (
 	"net/http"
 	"time"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/kubernetes/test/e2e/framework"
@@ -79,7 +79,7 @@ func TestcaseNetworkDelay(
 				Correlation: "25",
 			},
 		}
-		testDelayDuration = pointer.StringPtr("9m")
+		testDelayDuration = pointer.String("9m")
 	)
 
 	By("normal delay chaos")

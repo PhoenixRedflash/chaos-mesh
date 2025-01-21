@@ -140,9 +140,11 @@ type NetworkChaosStatus struct {
 
 // DelaySpec defines detail of a delay action
 type DelaySpec struct {
+	// +kubebuilder:validation:Pattern="^[0-9]+(\\.[0-9]+)?(ns|us|ms|s|m|h)$"
 	Latency string `json:"latency" webhook:"Duration"`
 	// +optional
 	Correlation string `json:"correlation,omitempty" default:"0" webhook:"FloatStr"`
+	// +kubebuilder:validation:Pattern="^[0-9]+(\\.[0-9]+)?(ns|us|ms|s|m|h)$"
 	// +optional
 	Jitter string `json:"jitter,omitempty" default:"0ms" webhook:"Duration"`
 	// +optional
@@ -172,7 +174,7 @@ type CorruptSpec struct {
 
 // BandwidthSpec defines detail of bandwidth limit.
 type BandwidthSpec struct {
-	// Rate is the speed knob. Allows bps, kbps, mbps, gbps, tbps unit. bps means bytes per second.
+	// Rate is the speed knob. Allows bit, kbit, mbit, gbit, tbit, bps, kbps, mbps, gbps, tbps unit. bps means bytes per second.
 	Rate string `json:"rate" webhook:"Rate"`
 	// Limit is the number of bytes that can be queued waiting for tokens to become available.
 	// +kubebuilder:validation:Minimum=1
@@ -202,6 +204,12 @@ type ReorderSpec struct {
 	// +optional
 	Correlation string `json:"correlation,omitempty" default:"0" webhook:"FloatStr"`
 	Gap         int    `json:"gap"`
+}
+
+// RateSpec defines details of rate limit.
+type RateSpec struct {
+	// Rate is the speed knob. Allows bit, kbit, mbit, gbit, tbit, bps, kbps, mbps, gbps, tbps unit. bps means bytes per second.
+	Rate string `json:"rate" webhook:"Rate"`
 }
 
 func (obj *NetworkChaos) GetSelectorSpecs() map[string]interface{} {

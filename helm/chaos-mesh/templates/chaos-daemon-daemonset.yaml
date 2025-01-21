@@ -57,6 +57,9 @@ spec:
       {{- if .Values.imagePullSecrets }}
       imagePullSecrets: {{ toYaml .Values.imagePullSecrets | nindent 8 }}
       {{- end }}
+      {{- if .Values.chaosDaemon.securityContext }}
+      securityContext: {{ toYaml .Values.chaosDaemon.securityContext | nindent 8 }}
+      {{- end }}
       containers:
         - name: chaos-daemon
           image: {{template "chaos-daemon.image" . }}
@@ -112,15 +115,7 @@ spec:
                 - SYS_PTRACE
             {{- else }}
             capabilities:
-              add:
-                - SYS_PTRACE
-                - NET_ADMIN
-                - MKNOD
-                - SYS_CHROOT
-                - SYS_ADMIN
-                - KILL
-                # CAP_IPC_LOCK is used to lock memory
-                - IPC_LOCK
+{{ toYaml .Values.chaosDaemon.capabilities | indent 14 }}
             {{- end }}
           volumeMounts:
             - name: socket-path
@@ -184,7 +179,7 @@ spec:
         {{- end }}
       volumes:
         - name: socket-path
-          hostPath: 
+          hostPath:
             path: {{template "chaos-daemon.socket-path" . }}
         - name: sys-path
           hostPath:

@@ -31,7 +31,7 @@ import (
 
 	"github.com/chaos-mesh/chaos-mesh/api/v1alpha1"
 	"github.com/chaos-mesh/chaos-mesh/pkg/clientpool"
-	config "github.com/chaos-mesh/chaos-mesh/pkg/config/dashboard"
+	config "github.com/chaos-mesh/chaos-mesh/pkg/config"
 	apiservertypes "github.com/chaos-mesh/chaos-mesh/pkg/dashboard/apiserver/types"
 	u "github.com/chaos-mesh/chaos-mesh/pkg/dashboard/apiserver/utils"
 )
@@ -77,7 +77,7 @@ func (s *Service) listStatusCheckTemplate(c *gin.Context) {
 	ns, name := c.Query("namespace"), c.Query("name")
 	if ns == "" && !s.conf.ClusterScoped && s.conf.TargetNamespace != "" {
 		ns = s.conf.TargetNamespace
-		s.logger.Info("Replace query namespace with", ns)
+		s.logger.Info("Replace query namespace", "ns", ns)
 	}
 
 	configMapList := v1.ConfigMapList{}
@@ -141,7 +141,7 @@ func (s *Service) createStatusCheckTemplate(c *gin.Context) {
 		return
 	}
 	template.Spec.Default()
-	if err := template.Spec.Validate(); err != nil {
+	if _, err := template.Spec.Validate(); err != nil {
 		u.SetAPIError(c, u.ErrInternalServer.WrapWithNoMessage(err))
 		return
 	}
@@ -195,7 +195,7 @@ func (s *Service) getStatusCheckTemplateDetail(c *gin.Context) {
 	ns, name := c.Query("namespace"), c.Query("name")
 	if ns == "" && !s.conf.ClusterScoped && s.conf.TargetNamespace != "" {
 		ns = s.conf.TargetNamespace
-		s.logger.Info("Replace query namespace with", ns)
+		s.logger.Info("Replace query namespace", "ns", ns)
 	}
 	if name == "" {
 		u.SetAPIError(c, u.ErrBadRequest.New("name is required"))
@@ -256,7 +256,7 @@ func (s *Service) updateStatusCheckTemplate(c *gin.Context) {
 		return
 	}
 	template.Spec.Default()
-	if err := template.Spec.Validate(); err != nil {
+	if _, err := template.Spec.Validate(); err != nil {
 		u.SetAPIError(c, u.ErrInternalServer.WrapWithNoMessage(err))
 		return
 	}
@@ -315,7 +315,7 @@ func (s *Service) deleteStatusCheckTemplate(c *gin.Context) {
 	ns, name := c.Query("namespace"), c.Query("name")
 	if ns == "" && !s.conf.ClusterScoped && s.conf.TargetNamespace != "" {
 		ns = s.conf.TargetNamespace
-		s.logger.Info("Replace query namespace with", ns)
+		s.logger.Info("Replace query namespace", "ns", ns)
 	}
 	if name == "" {
 		u.SetAPIError(c, u.ErrBadRequest.New("name is required"))

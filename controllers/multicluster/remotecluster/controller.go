@@ -21,6 +21,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	"helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/storage/driver"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -31,13 +32,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/chaos-mesh/chaos-mesh/api/v1alpha1"
+	"github.com/chaos-mesh/chaos-mesh/controllers/config"
 	"github.com/chaos-mesh/chaos-mesh/controllers/multicluster/clusterregistry"
 	"github.com/chaos-mesh/chaos-mesh/pkg/helm"
 )
 
 const remoteClusterControllerFinalizer = "chaos-mesh/remotecluster-controllers"
 const chaosMeshReleaseName = "chaos-mesh"
-const chaosMeshReleaseVersion = "2.4.1"
 
 type Reconciler struct {
 	Log      logr.Logger
@@ -79,6 +80,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{}, nil
 	}
 
+	r.Log.Info("remote cluster", "Generation:", obj.ObjectMeta.Generation, "ObservedGeneration:", obj.Status.ObservedGeneration)
+
+	if obj.ObjectMeta.Generation <= obj.Status.ObservedGeneration {
+		r.Log.Info("the target remote cluster has been up to date", "remote cluster", obj.Namespace+"/"+obj.Name)
+		return ctrl.Result{}, nil
+	}
+
 	clientConfig, err := r.getRestConfig(ctx, obj.Spec.KubeConfig.SecretRef)
 	if err != nil {
 		r.Log.Error(err, "fail to get clientConfig from secret")
@@ -117,7 +125,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{}, nil
 	}
 
-	err = r.ensureHelmRelease(ctx, &obj, clientConfig)
+	currentVersion, err := r.ensureHelmRelease(ctx, &obj, clientConfig)
 	if err != nil {
 		r.Log.Error(err, "fail to list or install remote helm release")
 		return ctrl.Result{Requeue: true}, nil
@@ -135,15 +143,21 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{Requeue: true}, nil
 	}
 
+	observedGeneration := obj.ObjectMeta.Generation
 	err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		var newObj v1alpha1.RemoteCluster
 		r.Client.Get(ctx, req.NamespacedName, &newObj)
 
 		newObj.Finalizers = obj.Finalizers
 		setRemoteClusterCondition(&newObj, v1alpha1.RemoteClusterConditionInstalled, corev1.ConditionTrue, "")
-		// TODO: do auto config migration
-		newObj.Status.CurrentVersion = chaosMeshReleaseVersion
-		return r.Client.Update(ctx, &newObj)
+
+		if err = r.Client.Update(ctx, &newObj); err != nil {
+			return err
+		}
+		newObj.Status.CurrentVersion = currentVersion
+		newObj.Status.ObservedGeneration = observedGeneration
+		err = r.Client.Status().Update(ctx, &newObj)
+		return err
 	})
 	if err != nil {
 		r.Log.Error(err, "fail to update finalizer", "name", obj.Name)
@@ -180,36 +194,41 @@ func (r *Reconciler) getHelmClient(ctx context.Context, clientConfig clientcmd.C
 	return helmClient, nil
 }
 
-func (r *Reconciler) ensureHelmRelease(ctx context.Context, obj *v1alpha1.RemoteCluster, clientConfig clientcmd.ClientConfig) error {
+func (r *Reconciler) ensureHelmRelease(ctx context.Context, obj *v1alpha1.RemoteCluster, clientConfig clientcmd.ClientConfig) (string, error) {
 	helmClient, err := r.getHelmClient(ctx, clientConfig)
 	if err != nil {
-		return err
+		return "", err
+	}
+	_, releaseErr := helmClient.GetRelease(obj.Spec.Namespace, chaosMeshReleaseName)
+	if releaseErr != nil && !errors.Is(releaseErr, driver.ErrReleaseNotFound) {
+		return "", releaseErr
+	}
+	chart, err := helm.FetchChaosMeshChart(ctx, obj.Spec.Version, config.ControllerCfg.LocalHelmChartPath)
+	if err != nil {
+		return "", err
 	}
 
-	_, err = helmClient.GetRelease(obj.Spec.Namespace, chaosMeshReleaseName)
-	if err != nil {
-		if errors.Is(err, driver.ErrReleaseNotFound) {
-			chart, err := helm.FetchChaosMeshChart(ctx, chaosMeshReleaseVersion)
-			if err != nil {
-				return err
-			}
-
-			values := make(map[string]interface{})
-			if obj.Spec.ConfigOverride != nil {
-				err = json.Unmarshal(obj.Spec.ConfigOverride, &values)
-				if err != nil {
-					return err
-				}
-			}
-			_, err = helmClient.UpgradeOrInstall(obj.Spec.Namespace, chaosMeshReleaseName, chart, values)
-			if err != nil {
-				return err
-			}
-		} else {
-			return err
+	values := make(map[string]interface{})
+	if obj.Spec.ConfigOverride != nil {
+		err = json.Unmarshal(obj.Spec.ConfigOverride, &values)
+		if err != nil {
+			return "", err
 		}
 	}
-	return nil
+	var release *release.Release
+	if errors.Is(releaseErr, driver.ErrReleaseNotFound) {
+		release, err = helmClient.InstallRelease(obj.Spec.Namespace, chaosMeshReleaseName, chart, values)
+		if err != nil {
+			return "", err
+		}
+	} else {
+		release, err = helmClient.UpgradeRelease(obj.Spec.Namespace, chaosMeshReleaseName, chart, values)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return release.Chart.AppVersion(), nil
 }
 
 func (r *Reconciler) uninstallHelmRelease(ctx context.Context, obj *v1alpha1.RemoteCluster, clientConfig clientcmd.ClientConfig) error {

@@ -23,7 +23,7 @@ metadata:
     app.kubernetes.io/component: chaos-dns-server
 data:
   Corefile: |
-    .:53 {
+    .:5353 {
         errors
         health {
             lameduck 5s
@@ -35,6 +35,7 @@ data:
             ttl 30
             grpcport {{ .Values.dnsServer.grpcPort }}
         }
+        prometheus :9153
         forward . /etc/resolv.conf {
             max_concurrent 1000
         }

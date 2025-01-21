@@ -4,24 +4,28 @@ header:
     copyright-owner: Chaos Mesh Authors.
   paths-ignore:
     - '.gitignore'
+    - '.gitkeep'
     - '.dockerignore'
     - '.editorconfig'
     - '.lift.toml'
     - '.muse.toml'
+    - '.devcontainer'
+    - .prettierrc
     - '**/*.md'
     - '**/*.json'
     - '**/*.log'
     - 'vendor/**'
     - '**/go.mod'
     - '**/go.sum'
+    - '**/go.work'
+    - '**/go.work.sum'
     - '**/*.crt'
     - '**/*.key'
     - '**/*.ext'
     - '**/*.csr'
-    - '.github/workflows/*'
-    - '.github/ISSUE_TEMPLATE/config.yml'
-    - '.github/.licenserc.yaml'
+    - '.github/**'
     - 'Makefile'
+    - '*.mk'
     - 'PROJECT'
     - 'LICENSE'
     # build cache in dev-env
@@ -53,10 +57,12 @@ header:
     # Dockerfiles
     - '**/Dockerfile'
     # UI
+    - 'ui/pnpm-workspace.yaml'
+    - 'ui/pnpm-lock.yaml'
     - 'ui/.husky/**'
     - 'ui/.prettierignore'
     - 'ui/.prettierrc'
-    - 'ui/.yarnclean'
+    - 'ui/app/public/index.html'
     - 'ui/app/src/api/zz_generated.frontend.chaos-mesh.ts'
     - 'ui/app/src/formik/**'
     - 'ui/app/src/openapi/**'
@@ -70,7 +76,9 @@ header:
     - 'ui/packages/mui-extends/.storybook/**'
     - 'ui/packages/mui-extends/stories/**'
     - 'ui/packages/mui-extends/test/storyshots.test.js'
-    - 'ui/yarn.lock'
     # codecov configuration file
     - 'codecov.yml'
-    - '.gitkeep'
+    # OWNERS
+    - 'OWNERS'
+    - 'OWNERS_ALIASES'
+    - '.well-known/funding-manifest-urls'

@@ -29,11 +29,21 @@ import (
 
 const ChaosMeshHelmRepo = "https://charts.chaos-mesh.org"
 
-func FetchChaosMeshChart(ctx context.Context, version string) (*chart.Chart, error) {
-	tgzPath, err := DownloadChaosMeshChartTgz(ctx, version)
-	if err != nil {
-		return nil, err
+func FetchChaosMeshChart(ctx context.Context, version, local string) (*chart.Chart, error) {
+	var (
+		tgzPath string
+		err     error
+	)
+	if local != "" {
+		if tgzPath, err = GetChaosMeshChartTgzPath(ctx, version, local); err != nil {
+			return nil, err
+		}
+	} else {
+		if tgzPath, err = DownloadChaosMeshChartTgz(ctx, version); err != nil {
+			return nil, err
+		}
 	}
+
 	requestedChart, err := loader.Load(tgzPath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "load helm chart from %s", tgzPath)
@@ -41,11 +51,26 @@ func FetchChaosMeshChart(ctx context.Context, version string) (*chart.Chart, err
 	return requestedChart, nil
 }
 
-func DownloadChaosMeshChartTgz(ctx context.Context, version string) (string, error) {
-	// TODO: use this context
+func GetChaosMeshChartTgzPath(ctx context.Context, version, local string) (string, error) {
+	fileName := fmt.Sprintf("chaos-mesh-%s.tgz", version)
+	tgzPath := fmt.Sprintf("%s/%s", os.TempDir(), fileName)
+	if local != "" {
+		tgzPath = fmt.Sprintf("%s/%s", local, fileName)
+	}
 
+	if _, err := os.Stat(tgzPath); err != nil {
+		return "", err
+	}
+	return tgzPath, nil
+}
+
+func DownloadChaosMeshChartTgz(ctx context.Context, version string) (string, error) {
 	url := fmt.Sprintf("%s/chaos-mesh-%s.tgz", ChaosMeshHelmRepo, version)
-	response, err := http.Get(url)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to generate http request for url %s", url)
+	}
+	response, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return "", errors.Wrapf(err, "download helm chart from %s", url)
 	}

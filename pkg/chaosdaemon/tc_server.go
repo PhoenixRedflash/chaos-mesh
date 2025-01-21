@@ -420,10 +420,10 @@ func (c *tcClient) addTbf(device string, parent string, handle string, tbf *pb.T
 
 func convertNetemToArgs(netem *pb.Netem) string {
 	args := ""
-	if netem.Time > 0 {
-		args = fmt.Sprintf("delay %d", netem.Time)
-		if netem.Jitter > 0 {
-			args = fmt.Sprintf("%s %d", args, netem.Jitter)
+	if netem.Time > "0ms" {
+		args = fmt.Sprintf("delay %s", netem.Time)
+		if netem.Jitter > "0ms" {
+			args = fmt.Sprintf("%s %s", args, netem.Jitter)
 
 			if netem.DelayCorr > 0 {
 				args = fmt.Sprintf("%s %f", args, netem.DelayCorr)
@@ -468,6 +468,10 @@ func convertNetemToArgs(netem *pb.Netem) string {
 		}
 	}
 
+	if len(netem.Rate) > 0 {
+		args = fmt.Sprintf("%s rate %s", args, netem.Rate)
+	}
+
 	trimedArgs := []string{}
 
 	for _, part := range strings.Split(args, " ") {
@@ -480,7 +484,7 @@ func convertNetemToArgs(netem *pb.Netem) string {
 }
 
 func convertTbfToArgs(tbf *pb.Tbf) string {
-	args := fmt.Sprintf("rate %d burst %d", tbf.Rate, tbf.Buffer)
+	args := fmt.Sprintf("rate %s burst %d", tbf.Rate, tbf.Buffer)
 	if tbf.Limit > 0 {
 		args = fmt.Sprintf("%s limit %d", args, tbf.Limit)
 	}

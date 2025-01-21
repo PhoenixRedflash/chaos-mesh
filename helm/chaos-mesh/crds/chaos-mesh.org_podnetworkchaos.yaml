@@ -1,11 +1,9 @@
-
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.4.1
-  creationTimestamp: null
+    controller-gen.kubebuilder.io/version: v0.13.0
   name: podnetworkchaos.chaos-mesh.org
 spec:
   group: chaos-mesh.org
@@ -153,8 +151,9 @@ spec:
                           minimum: 0
                           type: integer
                         rate:
-                          description: Rate is the speed knob. Allows bps, kbps, mbps,
-                            gbps, tbps unit. bps means bytes per second.
+                          description: Rate is the speed knob. Allows bit, kbit, mbit,
+                            gbit, tbit, bps, kbps, mbps, gbps, tbps unit. bps means
+                            bytes per second.
                           type: string
                       required:
                       - buffer
@@ -177,8 +176,10 @@ spec:
                         correlation:
                           type: string
                         jitter:
+                          pattern: ^[0-9]+(\.[0-9]+)?(ns|us|ms|s|m|h)$
                           type: string
                         latency:
+                          pattern: ^[0-9]+(\.[0-9]+)?(ns|us|ms|s|m|h)$
                           type: string
                         reorder:
                           description: ReorderSpec defines details of packet reorder.
@@ -223,6 +224,17 @@ spec:
                       required:
                       - loss
                       type: object
+                    rate:
+                      description: Rate represents the detail about rate control action
+                      properties:
+                        rate:
+                          description: Rate is the speed knob. Allows bit, kbit, mbit,
+                            gbit, tbit, bps, kbps, mbps, gbps, tbps unit. bps means
+                            bytes per second.
+                          type: string
+                      required:
+                      - rate
+                      type: object
                     source:
                       description: The name and namespace of the source network chaos
                       type: string
@@ -252,9 +264,3 @@ spec:
     storage: true
     subresources:
       status: {}
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []

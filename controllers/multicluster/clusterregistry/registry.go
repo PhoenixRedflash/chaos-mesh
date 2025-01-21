@@ -20,6 +20,7 @@ import (
 	"os"
 	"sync"
 
+	fxlogr "github.com/chaos-mesh/fx-logr"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"go.uber.org/fx"
@@ -28,12 +29,12 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	controllermetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"github.com/chaos-mesh/chaos-mesh/cmd/chaos-controller-manager/provider"
 	"github.com/chaos-mesh/chaos-mesh/controllers/config"
 	"github.com/chaos-mesh/chaos-mesh/controllers/multicluster/remotechaosmonitor"
 	"github.com/chaos-mesh/chaos-mesh/controllers/types"
-	"github.com/chaos-mesh/chaos-mesh/pkg/log"
 )
 
 type remoteCluster struct {
@@ -98,8 +99,10 @@ func run(lc fx.Lifecycle, mgr ctrl.Manager, logger logr.Logger) error {
 func controllerManagerOption(scheme *runtime.Scheme) *ctrl.Options {
 	options := ctrl.Options{
 		// TODO: accept the schema from parameter instead of using scheme directly
-		Scheme:             scheme,
-		MetricsBindAddress: "0",
+		Scheme: scheme,
+		Metrics: metricsserver.Options{
+			BindAddress: "0",
+		},
 		// TODO: enable leader election
 		LeaderElection: false,
 		RetryPeriod:    &config.ControllerCfg.LeaderElectRetryPeriod,
@@ -158,10 +161,12 @@ func (r *RemoteClusterRegistry) Spawn(name string, config *rest.Config) error {
 		return errors.Wrapf(ErrAlreadyExist, "spawn cluster: %s", name)
 	}
 
+	remoteFxLogger := r.logger.WithName("remotecluster-fx-" + name)
+
 	localClient := r.client
 	var remoteClient client.Client
 	app := fx.New(
-		fx.Logger(log.NewLogrPrinter(r.logger.WithName("remotecluster-fx-"+name))),
+		fx.WithLogger(fxlogr.WithLogr(&remoteFxLogger)),
 		fx.Supply(controllermetrics.Registry),
 		fx.Supply(r.logger.WithName("remotecluster-"+name)),
 		fx.Supply(config),

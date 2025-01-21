@@ -16,7 +16,7 @@
 package v1alpha1
 
 import (
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -46,7 +46,8 @@ var _ = Describe("awschaos_webhook", func() {
 						},
 					},
 					execute: func(chaos *AWSChaos) error {
-						return chaos.ValidateCreate()
+						_, err := chaos.ValidateCreate()
+						return err
 					},
 					expect: "error",
 				},
@@ -59,7 +60,8 @@ var _ = Describe("awschaos_webhook", func() {
 						},
 					},
 					execute: func(chaos *AWSChaos) error {
-						return chaos.ValidateCreate()
+						_, err := chaos.ValidateCreate()
+						return err
 					},
 					expect: "error",
 				},
@@ -78,7 +80,8 @@ var _ = Describe("awschaos_webhook", func() {
 						},
 					},
 					execute: func(chaos *AWSChaos) error {
-						return chaos.ValidateCreate()
+						_, err := chaos.ValidateCreate()
+						return err
 					},
 					expect: "error",
 				},
@@ -97,7 +100,8 @@ var _ = Describe("awschaos_webhook", func() {
 						},
 					},
 					execute: func(chaos *AWSChaos) error {
-						return chaos.ValidateCreate()
+						_, err := chaos.ValidateCreate()
+						return err
 					},
 					expect: "error",
 				},

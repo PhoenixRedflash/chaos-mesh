@@ -20,7 +20,7 @@ import (
 	"net/http"
 	"time"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -56,7 +56,7 @@ func TestcaseTimeSkewOnceThenRecover(
 			Namespace: ns,
 		},
 		Spec: v1alpha1.TimeChaosSpec{
-			Duration:   pointer.StringPtr("9m"),
+			Duration:   pointer.String("9m"),
 			TimeOffset: "-1h",
 			ContainerSelector: v1alpha1.ContainerSelector{
 				PodSelector: v1alpha1.PodSelector{
@@ -128,7 +128,7 @@ func TestcaseTimeSkewPauseThenUnpause(
 			Namespace: ns,
 		},
 		Spec: v1alpha1.TimeChaosSpec{
-			Duration:   pointer.StringPtr("9m"),
+			Duration:   pointer.String("9m"),
 			TimeOffset: "-1h",
 			ContainerSelector: v1alpha1.ContainerSelector{
 				PodSelector: v1alpha1.PodSelector{
@@ -248,7 +248,7 @@ func TestcaseTimeSkewShouldAlsoAffectChildProces(
 			Namespace: ns,
 		},
 		Spec: v1alpha1.TimeChaosSpec{
-			Duration:   pointer.StringPtr("9m"),
+			Duration:   pointer.String("9m"),
 			TimeOffset: "-1h",
 			ContainerSelector: v1alpha1.ContainerSelector{
 				PodSelector: v1alpha1.PodSelector{

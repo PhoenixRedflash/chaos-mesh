@@ -25,12 +25,11 @@ import (
 
 // FromDelay convert delay to netem
 func FromDelay(in *v1alpha1.DelaySpec) (*chaosdaemonpb.Netem, error) {
-	delayTime, err := time.ParseDuration(in.Latency)
-	if err != nil {
+	// Parse latency and jitter inputs to ensure they are valid
+	if _, err := time.ParseDuration(in.Latency); err != nil {
 		return nil, err
 	}
-	jitter, err := time.ParseDuration(in.Jitter)
-	if err != nil {
+	if _, err := time.ParseDuration(in.Jitter); err != nil {
 		return nil, err
 	}
 
@@ -40,9 +39,9 @@ func FromDelay(in *v1alpha1.DelaySpec) (*chaosdaemonpb.Netem, error) {
 	}
 
 	netem := &chaosdaemonpb.Netem{
-		Time:      uint32(delayTime.Nanoseconds() / 1e3),
+		Time:      in.Latency,
 		DelayCorr: float32(corr),
-		Jitter:    uint32(jitter.Nanoseconds() / 1e3),
+		Jitter:    in.Jitter,
 	}
 
 	if in.Reorder != nil {
@@ -118,20 +117,21 @@ func FromCorrupt(in *v1alpha1.CorruptSpec) (*chaosdaemonpb.Netem, error) {
 	}, nil
 }
 
+// FromRate convert RateSpec to netem
+func FromRate(in *v1alpha1.RateSpec) (*chaosdaemonpb.Netem, error) {
+	return &chaosdaemonpb.Netem{
+		Rate: in.Rate,
+	}, nil
+}
+
 // FromBandwidth converts BandwidthSpec to *chaosdaemonpb.Tbf
 // Bandwidth action use TBF under the hood.
 // TBF stands for Token Bucket Filter, is a classful queueing discipline available
 // for traffic control with the tc command.
 // http://man7.org/linux/man-pages/man8/tc-tbf.8.html
 func FromBandwidth(in *v1alpha1.BandwidthSpec) (*chaosdaemonpb.Tbf, error) {
-	rate, err := v1alpha1.ConvertUnitToBytes(in.Rate)
-
-	if err != nil {
-		return nil, err
-	}
-
 	tbf := &chaosdaemonpb.Tbf{
-		Rate:   rate,
+		Rate:   in.Rate,
 		Limit:  in.Limit,
 		Buffer: in.Buffer,
 	}

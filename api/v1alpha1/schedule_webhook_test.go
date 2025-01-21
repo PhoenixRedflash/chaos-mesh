@@ -16,7 +16,7 @@
 package v1alpha1
 
 import (
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -48,7 +48,8 @@ var _ = Describe("schedule_webhook", func() {
 						},
 					},
 					execute: func(schedule *Schedule) error {
-						return schedule.ValidateCreate()
+						_, err := schedule.ValidateCreate()
+						return err
 					},
 					expect: "error",
 				},
@@ -66,7 +67,8 @@ var _ = Describe("schedule_webhook", func() {
 						},
 					},
 					execute: func(schedule *Schedule) error {
-						return schedule.ValidateCreate()
+						_, err := schedule.ValidateCreate()
+						return err
 					},
 					expect: "",
 				},
@@ -84,7 +86,8 @@ var _ = Describe("schedule_webhook", func() {
 						},
 					},
 					execute: func(schedule *Schedule) error {
-						return schedule.ValidateCreate()
+						_, err := schedule.ValidateCreate()
+						return err
 					},
 					expect: "",
 				},
@@ -102,7 +105,8 @@ var _ = Describe("schedule_webhook", func() {
 						},
 					},
 					execute: func(schedule *Schedule) error {
-						return schedule.ValidateCreate()
+						_, err := schedule.ValidateCreate()
+						return err
 					},
 					expect: "",
 				},

@@ -19,8 +19,6 @@ import (
 	"time"
 
 	"github.com/kelseyhightower/envconfig"
-
-	"github.com/chaos-mesh/chaos-mesh/pkg/webhook/config/watcher"
 )
 
 // TLSConfig defines the configuration for chaos-daemon and chaosd tls client
@@ -86,8 +84,7 @@ type ChaosControllerConfig struct {
 	// CertsDir is the directory for storing certs key file and cert file
 	CertsDir string `envconfig:"CERTS_DIR" default:"/etc/webhook/certs"`
 	// RPCTimeout is timeout of RPC between controllers and chaos-operator
-	RPCTimeout    time.Duration `envconfig:"RPC_TIMEOUT" default:"1m"`
-	WatcherConfig *watcher.Config
+	RPCTimeout time.Duration `envconfig:"RPC_TIMEOUT" default:"1m"`
 	// ClusterScoped means control Chaos Object in cluster level(all namespace),
 	ClusterScoped bool `envconfig:"CLUSTER_SCOPED" default:"true"`
 	// TargetNamespace is the target namespace to injecting chaos.
@@ -115,6 +112,10 @@ type ChaosControllerConfig struct {
 
 	EnabledControllers []string `envconfig:"ENABLED_CONTROLLERS" default:"*"`
 	EnabledWebhooks    []string `envconfig:"ENABLED_WEBHOOKS" default:"*"`
+
+	LocalHelmChartPath string `envconfig:"LOCAL_HELM_CHART_PATH" default:""`
+
+	MaxEvents int `envconfig:"MAX_EVENTS" default:"100"`
 }
 
 // EnvironChaosController returns the settings from the environment.

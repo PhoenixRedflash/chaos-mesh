@@ -5,10 +5,14 @@ on:
     branches:
       - master
     paths-ignore:
+      - .gitignore
       - "**.md"
+      - .github/ISSUE_TEMPLATE/*
+      - .github/pull_request_template.md
       # Not available for frontend code for now.
       - "ui/**"
       - .github/workflows/checklink.yaml
+      - .github/checklink_config.json
       - .github/workflows/ci.yml
       - .github/workflows/ci_skip.yml
       - .github/workflows/codecov_unittest.yaml
@@ -17,7 +21,6 @@ on:
       - .github/workflows/license_checker.yml
       - .github/workflows/must_update_changelog.yml
       - .github/workflows/release_helm_chart.yml
-      - .github/workflows/stale.yml
       - .github/workflows/upload_env_image.yml
       - .github/workflows/upload_image.yml
       - .github/workflows/upload_image_pr.yml
@@ -33,9 +36,9 @@ jobs:
       fail-fast: false
       matrix:
         arch: [amd64, arm64]
-    runs-on: ${{ fromJson('{"amd64":"ubuntu-20.04", "arm64":["self-hosted", "Linux", "ARM64"]}')[matrix.arch] }}
+    runs-on: ${{ fromJson('{"amd64":"ubuntu-20.04", "arm64":"github-arm64-2c-8gb"}')[matrix.arch] }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           # Must use at least depth 2!
           fetch-depth: 2
@@ -46,8 +49,11 @@ jobs:
         with:
           kubectl_version: v1.23.1
 
+      - name: Restrict access to kubeconfig # https://github.com/helm/helm/issues/9115
+        run: chmod 600 ~/.kube/config
+
       - name: Setup Helm
-        uses: azure/setup-helm@v2.1
+        uses: azure/setup-helm@v3
 
       - name: Magic Kind DNS Fix
         if: ${{ matrix.arch == 'arm64' }}
@@ -60,9 +66,10 @@ jobs:
       - uses: actions/setup-python@v2
         if: ${{ matrix.arch != 'arm64' }} # We can assume the self-hosted arm64 has a functional python
 
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v4
         with:
-          go-version: "1.19.3"
+          check-latest: true
+          go-version-file: "go.mod"
       - name: Build Chaos Mesh Build Env
         if: ${{ github.event.pull_request }}
         env:
@@ -97,13 +104,13 @@ jobs:
           kubectl set env deployment/chaos-controller-manager SECURITY_MODE=true -n chaos-mesh
           sleep 5
           kubectl port-forward -n chaos-mesh svc/chaos-dashboard 2333:2333 &
-      - name: Make chaosctl
+      - name: Build chaosctl
         run: |
           make chaosctl
       - name: Install localstack && aws client
         run: |
           helm repo add localstack-repo http://helm.localstack.cloud
-          helm upgrade --install localstack localstack-repo/localstack --version 0.1.2
+          helm upgrade --install localstack localstack-repo/localstack --version 0.6.14
           pip install awscli
           kubectl wait --timeout=60s --for=condition=ready --all pod
 
@@ -117,7 +124,7 @@ jobs:
           kubectl cluster-info dump --all-namespaces --output-directory cluster-info-dump
       - name: post run - upload kubernetes cluster info dump
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: integration-test-kubernetes-cluster-info-dump-${{ matrix.arch }}
           path: cluster-info-dump

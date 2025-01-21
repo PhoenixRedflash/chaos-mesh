@@ -29,7 +29,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/chaos-mesh/chaos-mesh/api/v1alpha1"
-	config "github.com/chaos-mesh/chaos-mesh/pkg/config/dashboard"
+	config "github.com/chaos-mesh/chaos-mesh/pkg/config"
 	"github.com/chaos-mesh/chaos-mesh/pkg/dashboard/apiserver/types"
 	u "github.com/chaos-mesh/chaos-mesh/pkg/dashboard/apiserver/utils"
 	"github.com/chaos-mesh/chaos-mesh/pkg/dashboard/core"
@@ -308,8 +308,8 @@ func (s *Service) detailSchedule(c *gin.Context) {
 	exp, err := s.archiveSchedule.FindByUID(context.Background(), uid)
 	if err != nil {
 		if gorm.IsRecordNotFoundError(err) {
-			c.Status(http.StatusInternalServerError)
-			_ = c.Error(u.ErrBadRequest.New("the archive schedule is not found"))
+			c.Status(http.StatusNotFound)
+			_ = c.Error(u.ErrBadRequest.New("the archived schedule is not found"))
 		} else {
 			c.Status(http.StatusInternalServerError)
 			_ = c.Error(u.ErrInternalServer.NewWithNoMessage())
@@ -486,7 +486,7 @@ func (s *Service) detailWorkflow(c *gin.Context) {
 	if err != nil {
 		if gorm.IsRecordNotFoundError(err) {
 			c.Status(http.StatusInternalServerError)
-			_ = c.Error(u.ErrBadRequest.New("the archive schedule is not found"))
+			_ = c.Error(u.ErrBadRequest.New("the archived workflow is not found"))
 		} else {
 			c.Status(http.StatusInternalServerError)
 			_ = c.Error(u.ErrInternalServer.NewWithNoMessage())

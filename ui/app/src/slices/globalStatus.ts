@@ -15,7 +15,6 @@
  *
  */
 import { PayloadAction, createSlice } from '@reduxjs/toolkit'
-import { ConfigChaosDashboardConfig } from 'openapi'
 import React from 'react'
 
 import { TokenFormValues } from 'components/Token'
@@ -39,11 +38,8 @@ const initialState: {
   alertOpen: boolean
   confirm: Confirm
   confirmOpen: boolean // control global confirm dialog
+  authOpen: boolean
   namespace: string
-  securityMode: boolean
-  dnsServerCreate: boolean
-  gcpSecurityMode: boolean
-  version: string
   tokens: TokenFormValues[]
   tokenName: string
 } = {
@@ -56,12 +52,9 @@ const initialState: {
     title: '',
     description: '',
   },
+  authOpen: false,
   confirmOpen: false,
   namespace: 'All',
-  securityMode: true,
-  dnsServerCreate: false,
-  gcpSecurityMode: false,
-  version: '',
   tokens: [],
   tokenName: '',
 }
@@ -84,11 +77,8 @@ const globalStatusSlice = createSlice({
     setConfirmOpen(state, action: PayloadAction<boolean>) {
       state.confirmOpen = action.payload
     },
-    setConfig(state, action: PayloadAction<ConfigChaosDashboardConfig>) {
-      state.securityMode = action.payload.security_mode!
-      state.dnsServerCreate = action.payload.dns_server_create!
-      state.gcpSecurityMode = action.payload.gcp_security_mode!
-      state.version = action.payload.version!
+    setAuthOpen(state, action: PayloadAction<boolean>) {
+      state.authOpen = action.payload
     },
     setNameSpace(state, action: PayloadAction<string>) {
       const ns = action.payload
@@ -111,10 +101,26 @@ const globalStatusSlice = createSlice({
 
       LS.set('token-name', name)
     },
+    removeToken(state) {
+      state.tokenName = ''
+      state.tokens = []
+
+      LS.remove('token')
+      LS.remove('token-name')
+    },
   },
 })
 
-export const { setAlert, setAlertOpen, setConfirm, setConfirmOpen, setConfig, setNameSpace, setTokens, setTokenName } =
-  globalStatusSlice.actions
+export const {
+  setAlert,
+  setAlertOpen,
+  setConfirm,
+  setConfirmOpen,
+  setAuthOpen,
+  setNameSpace,
+  setTokens,
+  setTokenName,
+  removeToken,
+} = globalStatusSlice.actions
 
 export default globalStatusSlice.reducer

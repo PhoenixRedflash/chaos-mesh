@@ -3,7 +3,7 @@ name: Upload Image
 on:
   workflow_dispatch: {}
   schedule:
-    - cron: "0 18 * * *"
+    - cron: "0 0 * * 0"
   release:
     types: [published]
 
@@ -11,6 +11,7 @@ permissions: read-all
 
 jobs:
   build-specific-architecture:
+    if: ${{ github.repository == 'chaos-mesh/chaos-mesh' }}
     permissions:
       # https://docs.github.com/en/packages/managing-github-packages-using-github-actions-workflows/publishing-and-installing-a-package-with-github-actions#authenticating-to-package-registries-on-github
       packages: write
@@ -21,9 +22,9 @@ jobs:
           [chaos-daemon, chaos-mesh, chaos-dashboard, chaos-kernel, chaos-dlv]
     outputs:
       image_tag: ${{ steps.image_tag.outputs.image_tag }}
-    runs-on: ${{ fromJson('{"amd64":"ubuntu-20.04", "arm64":["self-hosted", "Linux", "ARM64"]}')[matrix.arch] }}
+    runs-on: ${{ fromJson('{"amd64":"ubuntu-20.04", "arm64":"github-arm64-2c-8gb"}')[matrix.arch] }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           # It requires all the tags and branches to generate the correct GitVersion with `hack/version.sh`.
           fetch-depth: 0
@@ -40,7 +41,7 @@ jobs:
           echo "::set-output name=image_tag::$(echo $IMAGE_TAG)"
 
       - name: Login to GitHub Container registry
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -64,10 +65,6 @@ jobs:
             IMAGE_TAG=$IMAGE_TAG-$ARCH \
             IMAGE_DEV_ENV_BUILD=1 \
             IMAGE_BUILD_ENV_BUILD=1 \
-            IMAGE_PROJECT=${GITHUB_REPOSITORY_OWNER,,} \
-            IMAGE_BUILD_ENV_PROJECT=${GITHUB_REPOSITORY_OWNER,,} \
-            IMAGE_DEV_ENV_PROJECT=${GITHUB_REPOSITORY_OWNER,,} \
-            IMAGE_REGISTRY=ghcr.io \
             UI=$UI \
             image-$IMAGE
 
@@ -112,7 +109,7 @@ jobs:
             --os linux --arch arm64
 
       - name: Login to GitHub Container registry
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -143,7 +140,7 @@ jobs:
         with:
           cosign-release: "v1.13.1"
       - name: Login to GitHub Container registry
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -177,12 +174,13 @@ jobs:
     env:
       IMAGE_TAG: ${{ needs.build-specific-architecture.outputs.image_tag }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
-          go-version: "1.19.3"
+          check-latest: true
+          go-version-file: "go.mod"
 
       - name: Install bom
         run: go install sigs.k8s.io/bom/cmd/bom@latest

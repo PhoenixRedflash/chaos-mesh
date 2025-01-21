@@ -20,9 +20,10 @@ import (
 	"reflect"
 	"strconv"
 
-	lru "github.com/hashicorp/golang-lru"
+	lru "github.com/hashicorp/golang-lru/v2"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
@@ -34,7 +35,7 @@ type UpdatedClient struct {
 	client client.Client
 	scheme *runtime.Scheme
 
-	cache *lru.Cache
+	cache *lru.Cache[string, runtime.Object]
 }
 
 func (c *UpdatedClient) objectKey(key client.ObjectKey, obj client.Object) (string, error) {
@@ -46,7 +47,7 @@ func (c *UpdatedClient) objectKey(key client.ObjectKey, obj client.Object) (stri
 	return gvk.String() + "/" + key.String(), nil
 }
 
-func (c *UpdatedClient) Get(ctx context.Context, key client.ObjectKey, obj client.Object) error {
+func (c *UpdatedClient) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
 	err := c.client.Get(ctx, key, obj)
 	if err != nil {
 		return err
@@ -148,6 +149,10 @@ func (c *UpdatedClient) RESTMapper() meta.RESTMapper {
 	return c.client.RESTMapper()
 }
 
+func (c *UpdatedClient) SubResource(subResource string) client.SubResourceClient {
+	return c.client.SubResource(subResource)
+}
+
 func (c *UpdatedClient) Status() client.StatusWriter {
 	return &UpdatedStatusWriter{
 		statusWriter: c.client.Status(),
@@ -155,12 +160,24 @@ func (c *UpdatedClient) Status() client.StatusWriter {
 	}
 }
 
+func (c *UpdatedClient) GroupVersionKindFor(obj runtime.Object) (schema.GroupVersionKind, error) {
+	return c.client.GroupVersionKindFor(obj)
+}
+
+func (c *UpdatedClient) IsObjectNamespaced(obj runtime.Object) (bool, error) {
+	return c.client.IsObjectNamespaced(obj)
+}
+
 type UpdatedStatusWriter struct {
 	statusWriter client.StatusWriter
 	client       *UpdatedClient
 }
 
-func (c *UpdatedStatusWriter) Update(ctx context.Context, obj client.Object, opts ...client.UpdateOption) error {
+func (c *UpdatedStatusWriter) Create(ctx context.Context, obj client.Object, subResource client.Object, opts ...client.SubResourceCreateOption) error {
+	return c.statusWriter.Create(ctx, obj, subResource, opts...)
+}
+
+func (c *UpdatedStatusWriter) Update(ctx context.Context, obj client.Object, opts ...client.SubResourceUpdateOption) error {
 	err := c.statusWriter.Update(ctx, obj, opts...)
 	if err != nil {
 		return err
@@ -174,6 +191,6 @@ func (c *UpdatedStatusWriter) Update(ctx context.Context, obj client.Object, opt
 	return nil
 }
 
-func (c *UpdatedStatusWriter) Patch(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.PatchOption) error {
+func (c *UpdatedStatusWriter) Patch(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.SubResourcePatchOption) error {
 	return c.statusWriter.Patch(ctx, obj, patch, opts...)
 }

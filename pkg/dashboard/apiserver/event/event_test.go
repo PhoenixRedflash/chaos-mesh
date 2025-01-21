@@ -25,12 +25,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/mock"
 
-	config "github.com/chaos-mesh/chaos-mesh/pkg/config/dashboard"
+	config "github.com/chaos-mesh/chaos-mesh/pkg/config"
 	"github.com/chaos-mesh/chaos-mesh/pkg/dashboard/core"
 	pkgmock "github.com/chaos-mesh/chaos-mesh/pkg/mock"
 )
