@@ -28,7 +28,7 @@ import (
 	"go.uber.org/fx"
 	controllermetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 
-	config "github.com/chaos-mesh/chaos-mesh/pkg/config/dashboard"
+	config "github.com/chaos-mesh/chaos-mesh/pkg/config"
 	"github.com/chaos-mesh/chaos-mesh/pkg/dashboard/apivalidator"
 	"github.com/chaos-mesh/chaos-mesh/pkg/dashboard/swaggerserver"
 	"github.com/chaos-mesh/chaos-mesh/pkg/dashboard/uiserver"
@@ -81,30 +81,12 @@ func newEngine(config *config.ChaosDashboardConfig) *gin.Engine {
 
 	ui := uiserver.AssetsFS()
 	if ui != nil {
-		r.GET("/", func(c *gin.Context) {
-			c.FileFromFS("/", ui)
-		})
-		// `/:foo/*bar` from https://en.wikipedia.org/wiki/Foobar, the name itself has no meaning.
-		//
-		// This handle just internally redirects all no-exact routes to the root directory of static files because the UI is a single page application and only has one entry (index.html).
-		r.GET("/:foo", func(c *gin.Context) {
-			c.FileFromFS("/", ui)
-		})
-		r.GET("/:foo/*bar", func(c *gin.Context) {
-			c.FileFromFS("/", ui)
-		})
-
-		renderStatic := func(c *gin.Context) {
+		r.NoRoute(func(c *gin.Context) {
 			c.FileFromFS(c.Request.URL.Path, ui)
-		}
-		r.GET("/static/*any", renderStatic)
-		r.GET("/favicon.ico", renderStatic)
+		})
 	} else {
 		r.GET("/", func(c *gin.Context) {
-			c.String(http.StatusOK, `Dashboard UI is not built.
-Please run UI=1 make.
-Run UI=1 make images/chaos-dashboard/bin/chaos-dashboard if you only want to build dashboard only.
-(Note: If you only want to build the binary in local, pass IN_DOCKER=1)`)
+			c.String(http.StatusOK, "Dashboard UI is not built.")
 		})
 	}
 

@@ -61,18 +61,18 @@ type ExperimentStore interface {
 // Experiment represents an experiment instance. Use in db.
 type Experiment struct {
 	ExperimentMeta
-	Experiment string `gorm:"size:4096"` // JSON string
+	Experiment string `gorm:"type:text;size:32768"` // JSON string
 }
 
 // ExperimentMeta defines the metadata of an experiment. Use in db.
 type ExperimentMeta struct {
 	gorm.Model
-	UID        string    `gorm:"index:uid" json:"uid"`
-	Kind       string    `json:"kind"`
-	Name       string    `json:"name"`
-	Namespace  string    `json:"namespace"`
-	Action     string    `json:"action"`
-	StartTime  time.Time `json:"start_time"`
-	FinishTime time.Time `json:"finish_time"`
-	Archived   bool      `json:"archived"`
+	UID        string     `gorm:"index:uid" json:"uid"`
+	Kind       string     `json:"kind"`
+	Name       string     `json:"name"`
+	Namespace  string     `json:"namespace"`
+	Action     string     `json:"action"`
+	StartTime  time.Time  `json:"start_time"`
+	FinishTime *time.Time `json:"finish_time"`
+	Archived   bool       `json:"archived"`
 }

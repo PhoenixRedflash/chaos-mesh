@@ -14,33 +14,39 @@
  * limitations under the License.
  *
  */
+import { QueryClientProvider } from '@tanstack/react-query'
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import type { FC } from 'react'
 import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
 import { Provider as StoreProvider } from 'react-redux'
+import { RouterProvider } from 'react-router-dom'
 
 import store from './store'
 
-import TopContainer from 'components/TopContainer'
-
 import IntlProvider from './IntlProvider'
 import ThemeProvider from './ThemeProvider'
+import queryClient from './reactQueryClient'
+import router from './router'
 
 interface AppProps {
   forTesting?: boolean
 }
 
 const App: FC<AppProps> = ({ forTesting, children }) => {
-  const rendered = children || <TopContainer />
+  const rendered = children || <RouterProvider router={router} />
   const RealWorldOnlyProviders: FC = ({ children }) => <DndProvider backend={HTML5Backend}>{children}</DndProvider>
 
   return (
     <StoreProvider store={store}>
-      <ThemeProvider>
-        <IntlProvider>
-          {!forTesting ? <RealWorldOnlyProviders>{rendered}</RealWorldOnlyProviders> : rendered}
-        </IntlProvider>
-      </ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <IntlProvider>
+            {!forTesting ? <RealWorldOnlyProviders>{rendered}</RealWorldOnlyProviders> : rendered}
+          </IntlProvider>
+        </ThemeProvider>
+        <ReactQueryDevtools initialIsOpen={false} />
+      </QueryClientProvider>
     </StoreProvider>
   )
 }

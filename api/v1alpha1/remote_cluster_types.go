@@ -33,17 +33,21 @@ type RemoteCluster struct {
 
 	Spec RemoteClusterSpec `json:"spec,omitempty"`
 
-	//+optional
+	// +optional
 	Status RemoteClusterStatus `json:"status,omitempty"`
 }
 
 // RemoteClusterSpec defines the specification of a remote cluster
 type RemoteClusterSpec struct {
 	Namespace string `json:"namespace"`
+	Version   string `json:"version"`
 
 	KubeConfig RemoteClusterKubeConfig `json:"kubeConfig"`
 
-	//+optional
+	// +optional
+	// +kubebuilder:validation:Schemaless
+	// +kubebuilder:pruning:PreserveUnknownFields
+	// +kubebuilder:validation:Type=object
 	ConfigOverride json.RawMessage `json:"configOverride,omitempty"`
 }
 
@@ -65,7 +69,8 @@ type RemoteClusterStatus struct {
 
 	// Conditions represents the current condition of the remote cluster
 	// +optional
-	Conditions []RemoteClusterCondition `json:"conditions,omitempty"`
+	Conditions         []RemoteClusterCondition `json:"conditions,omitempty"`
+	ObservedGeneration int64                    `json:"observedGeneration,omitempty"`
 }
 
 type RemoteClusterConditionType string

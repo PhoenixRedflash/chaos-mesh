@@ -31,15 +31,16 @@ jobs:
           echo "The tag must start with 'v'"
           echo "GITHUB_REF: ${GITHUB_REF}"
           exit 1
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           # Must use at least depth 2!
           fetch-depth: 2
 
       - uses: actions/setup-python@v2
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v4
         with:
-          go-version: "1.19.3"
+          check-latest: true
+          go-version-file: "go.mod"
       - name: Configure awscli
         run: |
           pip3 install awscli

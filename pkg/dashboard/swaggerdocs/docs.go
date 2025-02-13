@@ -2367,29 +2367,20 @@ const docTemplate = `{
         "config.ChaosDashboardConfig": {
             "type": "object",
             "properties": {
-                "burst": {
-                    "description": "The Burst config for kubernetes client",
-                    "type": "integer",
-                    "default": 300
-                },
                 "cluster_mode": {
                     "description": "ClusterScoped means control Chaos Object in cluster level(all namespace).",
                     "type": "boolean",
                     "default": true
                 },
                 "dns_server_create": {
+                    "description": "After v2.5, the DNS server is created by default.",
                     "type": "boolean",
-                    "default": false
+                    "default": true
                 },
                 "enableFilterNamespace": {
                     "description": "EnableFilterNamespace will filter namespace with annotation. Only the pods/containers in namespace\nannotated with ` + "`" + `chaos-mesh.org/inject=enabled` + "`" + ` will be injected.",
                     "type": "boolean",
                     "default": false
-                },
-                "enableProfiling": {
-                    "description": "enableProfiling is a flag to enable pprof in controller-manager and chaos-daemon",
-                    "type": "boolean",
-                    "default": true
                 },
                 "gcp_security_mode": {
                     "description": "GcpSecurityMode will use the gcloud authentication to login to GKE user",
@@ -2403,11 +2394,6 @@ const docTemplate = `{
                 "listen_port": {
                     "type": "integer",
                     "default": 2333
-                },
-                "qps": {
-                    "description": "The QPS config for kubernetes client",
-                    "type": "number",
-                    "default": 200
                 },
                 "root_path": {
                     "type": "string",
@@ -3306,7 +3292,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "ports": {
-                    "description": "List of ports to expose from the container. Exposing a port here gives\nthe system additional information about the network connections a\ncontainer uses, but is primarily informational. Not specifying a port here\nDOES NOT prevent that port from being exposed. Any port which is\nlistening on the default \"0.0.0.0\" address inside a container will be\naccessible from the network.\nCannot be updated.\n+optional\n+patchMergeKey=containerPort\n+patchStrategy=merge\n+listType=map\n+listMapKey=containerPort\n+listMapKey=protocol",
+                    "description": "List of ports to expose from the container. Not specifying a port here\nDOES NOT prevent that port from being exposed. Any port which is\nlistening on the default \"0.0.0.0\" address inside a container will be\naccessible from the network.\nModifying this array with strategic merge patch may corrupt the data.\nFor more information See https://github.com/kubernetes/kubernetes/issues/108255.\nCannot be updated.\n+optional\n+patchMergeKey=containerPort\n+patchStrategy=merge\n+listType=map\n+listMapKey=containerPort\n+listMapKey=protocol",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/v1.ContainerPort"
@@ -3316,9 +3302,20 @@ const docTemplate = `{
                     "description": "Periodic probe of container service readiness.\nContainer will be removed from service endpoints if the probe fails.\nCannot be updated.\nMore info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes\n+optional",
                     "$ref": "#/definitions/v1.Probe"
                 },
+                "resizePolicy": {
+                    "description": "Resources resize policy for the container.\n+featureGate=InPlacePodVerticalScaling\n+optional\n+listType=atomic",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.ContainerResizePolicy"
+                    }
+                },
                 "resources": {
                     "description": "Compute Resources required by this container.\nCannot be updated.\nMore info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/\n+optional",
                     "$ref": "#/definitions/v1.ResourceRequirements"
+                },
+                "restartPolicy": {
+                    "description": "RestartPolicy defines the restart behavior of individual containers in a pod.\nThis field may only be set for init containers, and the only allowed value is \"Always\".\nFor non-init containers or when this field is not specified,\nthe restart behavior is defined by the Pod's restart policy and the container type.\nSetting the RestartPolicy as \"Always\" for the init container will have the following effect:\nthis init container will be continually restarted on\nexit until all regular containers have terminated. Once all regular\ncontainers have completed, all init containers with restartPolicy \"Always\"\nwill be shut down. This lifecycle differs from normal init containers and\nis often referred to as a \"sidecar\" container. Although this init\ncontainer still starts in the init container sequence, it does not wait\nfor the container to complete before proceeding to the next init\ncontainer. Instead, the next init container starts immediately after this\ninit container is started, or after any startupProbe has successfully\ncompleted.\n+featureGate=SidecarContainers\n+optional",
+                    "type": "string"
                 },
                 "securityContext": {
                     "description": "SecurityContext defines the security options the container should be run with.\nIf set, the fields of SecurityContext override the equivalent fields of PodSecurityContext.\nMore info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/\n+optional",
@@ -3393,6 +3390,19 @@ const docTemplate = `{
                 }
             }
         },
+        "v1.ContainerResizePolicy": {
+            "type": "object",
+            "properties": {
+                "resourceName": {
+                    "description": "Name of the resource to which this resource resize policy applies.\nSupported values: cpu, memory.",
+                    "type": "string"
+                },
+                "restartPolicy": {
+                    "description": "Restart policy to apply when specified resource is resized.\nIf not specified, it defaults to NotRequired.",
+                    "type": "string"
+                }
+            }
+        },
         "v1.DownwardAPIProjection": {
             "type": "object",
             "properties": {
@@ -3450,7 +3460,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "sizeLimit": {
-                    "description": "sizeLimit is the total amount of local storage required for this EmptyDir volume.\nThe size limit is also applicable for memory medium.\nThe maximum usage on memory medium EmptyDir would be the minimum value between\nthe SizeLimit specified here and the sum of memory limits of all containers in a pod.\nThe default is nil which means that the limit is undefined.\nMore info: http://kubernetes.io/docs/user-guide/volumes#emptydir\n+optional",
+                    "description": "sizeLimit is the total amount of local storage required for this EmptyDir volume.\nThe size limit is also applicable for memory medium.\nThe maximum usage on memory medium EmptyDir would be the minimum value between\nthe SizeLimit specified here and the sum of memory limits of all containers in a pod.\nThe default is nil which means that the limit is undefined.\nMore info: https://kubernetes.io/docs/concepts/storage/volumes#emptydir\n+optional",
                     "$ref": "#/definitions/resource.Quantity"
                 }
             }
@@ -3706,7 +3716,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "name": {
-                    "description": "The header field name",
+                    "description": "The header field name.\nThis will be canonicalized upon output, so case-variant names will be understood as the same header.",
                     "type": "string"
                 },
                 "value": {
@@ -3820,7 +3830,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "key": {
-                    "description": "key is the label key that the selector applies to.\n+patchMergeKey=key\n+patchStrategy=merge",
+                    "description": "key is the label key that the selector applies to.",
                     "type": "string"
                 },
                 "operator": {
@@ -3991,11 +4001,11 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "name": {
-                    "description": "Name of the referent.\nMore info: http://kubernetes.io/docs/user-guide/identifiers#names",
+                    "description": "Name of the referent.\nMore info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#names",
                     "type": "string"
                 },
                 "uid": {
-                    "description": "UID of the referent.\nMore info: http://kubernetes.io/docs/user-guide/identifiers#uids",
+                    "description": "UID of the referent.\nMore info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#uids",
                     "type": "string"
                 }
             }
@@ -4011,12 +4021,12 @@ const docTemplate = `{
                     }
                 },
                 "dataSource": {
-                    "description": "dataSource field can be used to specify either:\n* An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot)\n* An existing PVC (PersistentVolumeClaim)\nIf the provisioner or an external controller can support the specified data source,\nit will create a new volume based on the contents of the specified data source.\nIf the AnyVolumeDataSource feature gate is enabled, this field will always have\nthe same contents as the DataSourceRef field.\n+optional",
+                    "description": "dataSource field can be used to specify either:\n* An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot)\n* An existing PVC (PersistentVolumeClaim)\nIf the provisioner or an external controller can support the specified data source,\nit will create a new volume based on the contents of the specified data source.\nWhen the AnyVolumeDataSource feature gate is enabled, dataSource contents will be copied to dataSourceRef,\nand dataSourceRef contents will be copied to dataSource when dataSourceRef.namespace is not specified.\nIf the namespace is specified, then dataSourceRef will not be copied to dataSource.\n+optional",
                     "$ref": "#/definitions/v1.TypedLocalObjectReference"
                 },
                 "dataSourceRef": {
-                    "description": "dataSourceRef specifies the object from which to populate the volume with data, if a non-empty\nvolume is desired. This may be any local object from a non-empty API group (non\ncore object) or a PersistentVolumeClaim object.\nWhen this field is specified, volume binding will only succeed if the type of\nthe specified object matches some installed volume populator or dynamic\nprovisioner.\nThis field will replace the functionality of the DataSource field and as such\nif both fields are non-empty, they must have the same value. For backwards\ncompatibility, both fields (DataSource and DataSourceRef) will be set to the same\nvalue automatically if one of them is empty and the other is non-empty.\nThere are two important differences between DataSource and DataSourceRef:\n* While DataSource only allows two specific types of objects, DataSourceRef\n  allows any non-core object, as well as PersistentVolumeClaim objects.\n* While DataSource ignores disallowed values (dropping them), DataSourceRef\n  preserves all values, and generates an error if a disallowed value is\n  specified.\n(Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled.\n+optional",
-                    "$ref": "#/definitions/v1.TypedLocalObjectReference"
+                    "description": "dataSourceRef specifies the object from which to populate the volume with data, if a non-empty\nvolume is desired. This may be any object from a non-empty API group (non\ncore object) or a PersistentVolumeClaim object.\nWhen this field is specified, volume binding will only succeed if the type of\nthe specified object matches some installed volume populator or dynamic\nprovisioner.\nThis field will replace the functionality of the dataSource field and as such\nif both fields are non-empty, they must have the same value. For backwards\ncompatibility, when namespace isn't specified in dataSourceRef,\nboth fields (dataSource and dataSourceRef) will be set to the same\nvalue automatically if one of them is empty and the other is non-empty.\nWhen namespace is specified in dataSourceRef,\ndataSource isn't set to the same value and must be empty.\nThere are three important differences between dataSource and dataSourceRef:\n* While dataSource only allows two specific types of objects, dataSourceRef\n  allows any non-core object, as well as PersistentVolumeClaim objects.\n* While dataSource ignores disallowed values (dropping them), dataSourceRef\n  preserves all values, and generates an error if a disallowed value is\n  specified.\n* While dataSource only allows local objects, dataSourceRef allows objects\n  in any namespaces.\n(Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled.\n(Alpha) Using the namespace field of dataSourceRef requires the CrossNamespaceVolumeDataSource feature gate to be enabled.\n+optional",
+                    "$ref": "#/definitions/v1.TypedObjectReference"
                 },
                 "resources": {
                     "description": "resources represents the minimum resources the volume should have.\nIf RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements\nthat are lower than previous value but must still be higher than capacity recorded in the\nstatus field of the claim.\nMore info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources\n+optional",
@@ -4044,15 +4054,11 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "annotations": {
-                    "description": "Annotations is an unstructured key value map stored with a resource that may be\nset by external tools to store and retrieve arbitrary metadata. They are not\nqueryable and should be preserved when modifying objects.\nMore info: http://kubernetes.io/docs/user-guide/annotations\n+optional",
+                    "description": "Annotations is an unstructured key value map stored with a resource that may be\nset by external tools to store and retrieve arbitrary metadata. They are not\nqueryable and should be preserved when modifying objects.\nMore info: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations\n+optional",
                     "type": "object",
                     "additionalProperties": {
                         "type": "string"
                     }
-                },
-                "clusterName": {
-                    "description": "Deprecated: ClusterName is a legacy field that was always cleared by\nthe system and never used; it will be removed completely in 1.25.\n\nThe name in the go struct is changed to help clients detect\naccidental use.\n\n+optional",
-                    "type": "string"
                 },
                 "creationTimestamp": {
                     "description": "CreationTimestamp is a timestamp representing the server time when this object was\ncreated. It is not guaranteed to be set in happens-before order across separate operations.\nClients may not set this value. It is represented in RFC3339 form and is in UTC.\n\nPopulated by the system.\nRead-only.\nNull for lists.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata\n+optional",
@@ -4082,7 +4088,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "labels": {
-                    "description": "Map of string keys and values that can be used to organize and categorize\n(scope and select) objects. May match selectors of replication controllers\nand services.\nMore info: http://kubernetes.io/docs/user-guide/labels\n+optional",
+                    "description": "Map of string keys and values that can be used to organize and categorize\n(scope and select) objects. May match selectors of replication controllers\nand services.\nMore info: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels\n+optional",
                     "type": "object",
                     "additionalProperties": {
                         "type": "string"
@@ -4096,11 +4102,11 @@ const docTemplate = `{
                     }
                 },
                 "name": {
-                    "description": "Name must be unique within a namespace. Is required when creating resources, although\nsome resources may allow a client to request the generation of an appropriate name\nautomatically. Name is primarily intended for creation idempotence and configuration\ndefinition.\nCannot be updated.\nMore info: http://kubernetes.io/docs/user-guide/identifiers#names\n+optional",
+                    "description": "Name must be unique within a namespace. Is required when creating resources, although\nsome resources may allow a client to request the generation of an appropriate name\nautomatically. Name is primarily intended for creation idempotence and configuration\ndefinition.\nCannot be updated.\nMore info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#names\n+optional",
                     "type": "string"
                 },
                 "namespace": {
-                    "description": "Namespace defines the space within which each name must be unique. An empty namespace is\nequivalent to the \"default\" namespace, but \"default\" is the canonical representation.\nNot all objects are required to be scoped to a namespace - the value of this field for\nthose objects will be empty.\n\nMust be a DNS_LABEL.\nCannot be updated.\nMore info: http://kubernetes.io/docs/user-guide/namespaces\n+optional",
+                    "description": "Namespace defines the space within which each name must be unique. An empty namespace is\nequivalent to the \"default\" namespace, but \"default\" is the canonical representation.\nNot all objects are required to be scoped to a namespace - the value of this field for\nthose objects will be empty.\n\nMust be a DNS_LABEL.\nCannot be updated.\nMore info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces\n+optional",
                     "type": "string"
                 },
                 "ownerReferences": {
@@ -4123,7 +4129,7 @@ const docTemplate = `{
                     "$ref": "#/definitions/v1.PersistentVolumeClaimSpec"
                 },
                 "uid": {
-                    "description": "UID is the unique in time and space value for this object. It is typically generated by\nthe server on successful creation of a resource and is not allowed to change on PUT\noperations.\n\nPopulated by the system.\nRead-only.\nMore info: http://kubernetes.io/docs/user-guide/identifiers#uids\n+optional",
+                    "description": "UID is the unique in time and space value for this object. It is typically generated by\nthe server on successful creation of a resource and is not allowed to change on PUT\noperations.\n\nPopulated by the system.\nRead-only.\nMore info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#uids\n+optional",
                     "type": "string"
                 }
             }
@@ -4183,7 +4189,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "grpc": {
-                    "description": "GRPC specifies an action involving a GRPC port.\nThis is a beta field and requires enabling GRPCContainerProbe feature gate.\n+featureGate=GRPCContainerProbe\n+optional",
+                    "description": "GRPC specifies an action involving a GRPC port.\n+optional",
                     "$ref": "#/definitions/v1.GRPCAction"
                 },
                 "httpGet": {
@@ -4301,6 +4307,15 @@ const docTemplate = `{
                 }
             }
         },
+        "v1.ResourceClaim": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "description": "Name must match the name of one entry in pod.spec.resourceClaims of\nthe Pod where this field is used. It makes that resource available\ninside a container.",
+                    "type": "string"
+                }
+            }
+        },
         "v1.ResourceFieldSelector": {
             "type": "object",
             "properties": {
@@ -4327,12 +4342,19 @@ const docTemplate = `{
         "v1.ResourceRequirements": {
             "type": "object",
             "properties": {
+                "claims": {
+                    "description": "Claims lists the names of resources, defined in spec.resourceClaims,\nthat are used by this container.\n\nThis is an alpha field and requires enabling the\nDynamicResourceAllocation feature gate.\n\nThis field is immutable. It can only be set for containers.\n\n+listType=map\n+listMapKey=name\n+featureGate=DynamicResourceAllocation\n+optional",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/v1.ResourceClaim"
+                    }
+                },
                 "limits": {
                     "description": "Limits describes the maximum amount of compute resources allowed.\nMore info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/\n+optional",
                     "$ref": "#/definitions/v1.ResourceList"
                 },
                 "requests": {
-                    "description": "Requests describes the minimum amount of compute resources required.\nIf Requests is omitted for a container, it defaults to Limits if that is explicitly specified,\notherwise to an implementation-defined value.\nMore info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/\n+optional",
+                    "description": "Requests describes the minimum amount of compute resources required.\nIf Requests is omitted for a container, it defaults to Limits if that is explicitly specified,\notherwise to an implementation-defined value. Requests cannot exceed Limits.\nMore info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/\n+optional",
                     "$ref": "#/definitions/v1.ResourceList"
                 }
             }
@@ -4407,7 +4429,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "localhostProfile": {
-                    "description": "localhostProfile indicates a profile defined in a file on the node should be used.\nThe profile must be preconfigured on the node to work.\nMust be a descending path, relative to the kubelet's configured seccomp profile location.\nMust only be set if type is \"Localhost\".\n+optional",
+                    "description": "localhostProfile indicates a profile defined in a file on the node should be used.\nThe profile must be preconfigured on the node to work.\nMust be a descending path, relative to the kubelet's configured seccomp profile location.\nMust be set if type is \"Localhost\". Must NOT be set for any other type.\n+optional",
                     "type": "string"
                 },
                 "type": {
@@ -4607,6 +4629,27 @@ const docTemplate = `{
                 },
                 "name": {
                     "description": "Name is the name of resource being referenced",
+                    "type": "string"
+                }
+            }
+        },
+        "v1.TypedObjectReference": {
+            "type": "object",
+            "properties": {
+                "apiGroup": {
+                    "description": "APIGroup is the group for the resource being referenced.\nIf APIGroup is not specified, the specified Kind must be in the core API group.\nFor any other third-party types, APIGroup is required.\n+optional",
+                    "type": "string"
+                },
+                "kind": {
+                    "description": "Kind is the type of resource being referenced",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Name is the name of resource being referenced",
+                    "type": "string"
+                },
+                "namespace": {
+                    "description": "Namespace is the namespace of resource being referenced\nNote that when a namespace is specified, a gateway.networking.k8s.io/ReferenceGrant object is required in the referent namespace to allow that namespace's owner to accept the reference. See the ReferenceGrant documentation for details.\n(Alpha) This field requires the CrossNamespaceVolumeDataSource feature gate to be enabled.\n+featureGate=CrossNamespaceVolumeDataSource\n+optional",
                     "type": "string"
                 }
             }
@@ -4832,7 +4875,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "hostProcess": {
-                    "description": "HostProcess determines if a container should be run as a 'Host Process' container.\nThis field is alpha-level and will only be honored by components that enable the\nWindowsHostProcessContainers feature flag. Setting this field without the feature\nflag will result in errors when validating the Pod. All of a Pod's containers must\nhave the same effective HostProcess value (it is not allowed to have a mix of HostProcess\ncontainers and non-HostProcess containers).  In addition, if HostProcess is true\nthen HostNetwork must also be set to true.\n+optional",
+                    "description": "HostProcess determines if a container should be run as a 'Host Process' container.\nAll of a Pod's containers must have the same effective HostProcess value\n(it is not allowed to have a mix of HostProcess containers and non-HostProcess containers).\nIn addition, if HostProcess is true then HostNetwork must also be set to true.\n+optional",
                     "type": "boolean"
                 },
                 "runAsUserName": {
@@ -4996,7 +5039,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "rate": {
-                    "description": "Rate is the speed knob. Allows bps, kbps, mbps, gbps, tbps unit. bps means bytes per second.",
+                    "description": "Rate is the speed knob. Allows bit, kbit, mbit, gbit, tbit, bps, kbps, mbps, gbps, tbps unit. bps means bytes per second.",
                     "type": "string"
                 }
             }
@@ -5158,7 +5201,6 @@ const docTemplate = `{
                     "$ref": "#/definitions/v1alpha1.TimeChaosSpec"
                 },
                 "type": {
-                    "description": "TODO: use a custom type, as ` + "`" + `TemplateType` + "`" + ` contains other possible values",
                     "type": "string"
                 }
             }
@@ -5258,11 +5300,12 @@ const docTemplate = `{
                     "default": "0"
                 },
                 "jitter": {
-                    "description": "+optional",
+                    "description": "+kubebuilder:validation:Pattern=\"^[0-9]+(\\\\.[0-9]+)?(ns|us|ms|s|m|h)$\"\n+optional",
                     "type": "string",
                     "default": "0ms"
                 },
                 "latency": {
+                    "description": "+kubebuilder:validation:Pattern=\"^[0-9]+(\\\\.[0-9]+)?(ns|us|ms|s|m|h)$\"",
                     "type": "string"
                 },
                 "reorder": {
@@ -5843,6 +5886,10 @@ const docTemplate = `{
                     "description": "RemoteCluster represents the remote cluster where the chaos will be deployed\n+optional",
                     "type": "string"
                 },
+                "returnValue": {
+                    "description": "+optional\nthe return value for action 'return'",
+                    "type": "string"
+                },
                 "ruleData": {
                     "description": "+optional\nthe byteman rule's data for action 'ruleData'",
                     "type": "string"
@@ -5860,7 +5907,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "value": {
-                    "description": "+optional\nthe return value for action 'return'",
+                    "description": "Value is required when the mode is set to ` + "`" + `FixedMode` + "`" + ` / ` + "`" + `FixedPercentMode` + "`" + ` / ` + "`" + `RandomMaxPercentMode` + "`" + `.\nIf ` + "`" + `FixedMode` + "`" + `, provide an integer of pods to do chaos action.\nIf ` + "`" + `FixedPercentMode` + "`" + `, provide a number from 0-100 to specify the percent of pods the server can do chaos action.\nIF ` + "`" + `RandomMaxPercentMode` + "`" + `,  provide a number from 0-100 to specify the max percent of pods to do chaos action\n+optional",
                     "type": "string"
                 }
             }
@@ -6252,6 +6299,10 @@ const docTemplate = `{
                 "mode": {
                     "description": "Mode defines the mode to run chaos action.\nSupported mode: one / all / fixed / fixed-percent / random-max-percent\n+kubebuilder:validation:Enum=one;all;fixed;fixed-percent;random-max-percent",
                     "type": "string"
+                },
+                "rate": {
+                    "description": "Rate represents the detail about rate control action\n+ui:form:when=action=='rate'\n+optional",
+                    "$ref": "#/definitions/v1alpha1.RateSpec"
                 },
                 "remoteCluster": {
                     "description": "RemoteCluster represents the remote cluster where the chaos will be deployed\n+optional",
@@ -7046,6 +7097,15 @@ const docTemplate = `{
                 }
             }
         },
+        "v1alpha1.RateSpec": {
+            "type": "object",
+            "properties": {
+                "rate": {
+                    "description": "Rate is the speed knob. Allows bit, kbit, mbit, gbit, tbit, bps, kbps, mbps, gbps, tbps unit. bps means bytes per second.",
+                    "type": "string"
+                }
+            }
+        },
         "v1alpha1.RedisCacheLimitSpec": {
             "type": "object",
             "properties": {
@@ -7179,7 +7239,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "annotations": {
-                    "description": "Annotations is an unstructured key value map stored with a resource that may be\nset by external tools to store and retrieve arbitrary metadata. They are not\nqueryable and should be preserved when modifying objects.\nMore info: http://kubernetes.io/docs/user-guide/annotations\n+optional",
+                    "description": "Annotations is an unstructured key value map stored with a resource that may be\nset by external tools to store and retrieve arbitrary metadata. They are not\nqueryable and should be preserved when modifying objects.\nMore info: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations\n+optional",
                     "type": "object",
                     "additionalProperties": {
                         "type": "string"
@@ -7187,10 +7247,6 @@ const docTemplate = `{
                 },
                 "apiVersion": {
                     "description": "APIVersion defines the versioned schema of this representation of an object.\nServers should convert recognized schemas to the latest internal value, and\nmay reject unrecognized values.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources\n+optional",
-                    "type": "string"
-                },
-                "clusterName": {
-                    "description": "Deprecated: ClusterName is a legacy field that was always cleared by\nthe system and never used; it will be removed completely in 1.25.\n\nThe name in the go struct is changed to help clients detect\naccidental use.\n\n+optional",
                     "type": "string"
                 },
                 "creationTimestamp": {
@@ -7225,7 +7281,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "labels": {
-                    "description": "Map of string keys and values that can be used to organize and categorize\n(scope and select) objects. May match selectors of replication controllers\nand services.\nMore info: http://kubernetes.io/docs/user-guide/labels\n+optional",
+                    "description": "Map of string keys and values that can be used to organize and categorize\n(scope and select) objects. May match selectors of replication controllers\nand services.\nMore info: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels\n+optional",
                     "type": "object",
                     "additionalProperties": {
                         "type": "string"
@@ -7239,11 +7295,11 @@ const docTemplate = `{
                     }
                 },
                 "name": {
-                    "description": "Name must be unique within a namespace. Is required when creating resources, although\nsome resources may allow a client to request the generation of an appropriate name\nautomatically. Name is primarily intended for creation idempotence and configuration\ndefinition.\nCannot be updated.\nMore info: http://kubernetes.io/docs/user-guide/identifiers#names\n+optional",
+                    "description": "Name must be unique within a namespace. Is required when creating resources, although\nsome resources may allow a client to request the generation of an appropriate name\nautomatically. Name is primarily intended for creation idempotence and configuration\ndefinition.\nCannot be updated.\nMore info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#names\n+optional",
                     "type": "string"
                 },
                 "namespace": {
-                    "description": "Namespace defines the space within which each name must be unique. An empty namespace is\nequivalent to the \"default\" namespace, but \"default\" is the canonical representation.\nNot all objects are required to be scoped to a namespace - the value of this field for\nthose objects will be empty.\n\nMust be a DNS_LABEL.\nCannot be updated.\nMore info: http://kubernetes.io/docs/user-guide/namespaces\n+optional",
+                    "description": "Namespace defines the space within which each name must be unique. An empty namespace is\nequivalent to the \"default\" namespace, but \"default\" is the canonical representation.\nNot all objects are required to be scoped to a namespace - the value of this field for\nthose objects will be empty.\n\nMust be a DNS_LABEL.\nCannot be updated.\nMore info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces\n+optional",
                     "type": "string"
                 },
                 "ownerReferences": {
@@ -7269,7 +7325,7 @@ const docTemplate = `{
                     "$ref": "#/definitions/v1alpha1.ScheduleStatus"
                 },
                 "uid": {
-                    "description": "UID is the unique in time and space value for this object. It is typically generated by\nthe server on successful creation of a resource and is not allowed to change on PUT\noperations.\n\nPopulated by the system.\nRead-only.\nMore info: http://kubernetes.io/docs/user-guide/identifiers#uids\n+optional",
+                    "description": "UID is the unique in time and space value for this object. It is typically generated by\nthe server on successful creation of a resource and is not allowed to change on PUT\noperations.\n\nPopulated by the system.\nRead-only.\nMore info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#uids\n+optional",
                     "type": "string"
                 }
             }
@@ -7349,7 +7405,6 @@ const docTemplate = `{
                     "$ref": "#/definitions/v1alpha1.TimeChaosSpec"
                 },
                 "type": {
-                    "description": "TODO: use a custom type, as ` + "`" + `TemplateType` + "`" + ` contains other possible values",
                     "type": "string"
                 },
                 "workflow": {
@@ -7742,7 +7797,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "annotations": {
-                    "description": "Annotations is an unstructured key value map stored with a resource that may be\nset by external tools to store and retrieve arbitrary metadata. They are not\nqueryable and should be preserved when modifying objects.\nMore info: http://kubernetes.io/docs/user-guide/annotations\n+optional",
+                    "description": "Annotations is an unstructured key value map stored with a resource that may be\nset by external tools to store and retrieve arbitrary metadata. They are not\nqueryable and should be preserved when modifying objects.\nMore info: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations\n+optional",
                     "type": "object",
                     "additionalProperties": {
                         "type": "string"
@@ -7750,10 +7805,6 @@ const docTemplate = `{
                 },
                 "apiVersion": {
                     "description": "APIVersion defines the versioned schema of this representation of an object.\nServers should convert recognized schemas to the latest internal value, and\nmay reject unrecognized values.\nMore info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources\n+optional",
-                    "type": "string"
-                },
-                "clusterName": {
-                    "description": "Deprecated: ClusterName is a legacy field that was always cleared by\nthe system and never used; it will be removed completely in 1.25.\n\nThe name in the go struct is changed to help clients detect\naccidental use.\n\n+optional",
                     "type": "string"
                 },
                 "creationTimestamp": {
@@ -7788,7 +7839,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "labels": {
-                    "description": "Map of string keys and values that can be used to organize and categorize\n(scope and select) objects. May match selectors of replication controllers\nand services.\nMore info: http://kubernetes.io/docs/user-guide/labels\n+optional",
+                    "description": "Map of string keys and values that can be used to organize and categorize\n(scope and select) objects. May match selectors of replication controllers\nand services.\nMore info: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels\n+optional",
                     "type": "object",
                     "additionalProperties": {
                         "type": "string"
@@ -7802,11 +7853,11 @@ const docTemplate = `{
                     }
                 },
                 "name": {
-                    "description": "Name must be unique within a namespace. Is required when creating resources, although\nsome resources may allow a client to request the generation of an appropriate name\nautomatically. Name is primarily intended for creation idempotence and configuration\ndefinition.\nCannot be updated.\nMore info: http://kubernetes.io/docs/user-guide/identifiers#names\n+optional",
+                    "description": "Name must be unique within a namespace. Is required when creating resources, although\nsome resources may allow a client to request the generation of an appropriate name\nautomatically. Name is primarily intended for creation idempotence and configuration\ndefinition.\nCannot be updated.\nMore info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#names\n+optional",
                     "type": "string"
                 },
                 "namespace": {
-                    "description": "Namespace defines the space within which each name must be unique. An empty namespace is\nequivalent to the \"default\" namespace, but \"default\" is the canonical representation.\nNot all objects are required to be scoped to a namespace - the value of this field for\nthose objects will be empty.\n\nMust be a DNS_LABEL.\nCannot be updated.\nMore info: http://kubernetes.io/docs/user-guide/namespaces\n+optional",
+                    "description": "Namespace defines the space within which each name must be unique. An empty namespace is\nequivalent to the \"default\" namespace, but \"default\" is the canonical representation.\nNot all objects are required to be scoped to a namespace - the value of this field for\nthose objects will be empty.\n\nMust be a DNS_LABEL.\nCannot be updated.\nMore info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces\n+optional",
                     "type": "string"
                 },
                 "ownerReferences": {
@@ -7833,7 +7884,7 @@ const docTemplate = `{
                     "$ref": "#/definitions/v1alpha1.WorkflowStatus"
                 },
                 "uid": {
-                    "description": "UID is the unique in time and space value for this object. It is typically generated by\nthe server on successful creation of a resource and is not allowed to change on PUT\noperations.\n\nPopulated by the system.\nRead-only.\nMore info: http://kubernetes.io/docs/user-guide/identifiers#uids\n+optional",
+                    "description": "UID is the unique in time and space value for this object. It is typically generated by\nthe server on successful creation of a resource and is not allowed to change on PUT\noperations.\n\nPopulated by the system.\nRead-only.\nMore info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#uids\n+optional",
                     "type": "string"
                 }
             }
@@ -7898,7 +7949,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "2.2",
+	Version:          "2.5",
 	Host:             "",
 	BasePath:         "/api",
 	Schemes:          []string{},

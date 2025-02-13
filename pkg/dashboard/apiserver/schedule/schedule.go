@@ -34,7 +34,7 @@ import (
 
 	"github.com/chaos-mesh/chaos-mesh/api/v1alpha1"
 	"github.com/chaos-mesh/chaos-mesh/pkg/clientpool"
-	config "github.com/chaos-mesh/chaos-mesh/pkg/config/dashboard"
+	config "github.com/chaos-mesh/chaos-mesh/pkg/config"
 	apiservertypes "github.com/chaos-mesh/chaos-mesh/pkg/dashboard/apiserver/types"
 	u "github.com/chaos-mesh/chaos-mesh/pkg/dashboard/apiserver/utils"
 	"github.com/chaos-mesh/chaos-mesh/pkg/dashboard/core"
@@ -102,7 +102,7 @@ func (s *Service) list(c *gin.Context) {
 	if ns == "" && !s.config.ClusterScoped && s.config.TargetNamespace != "" {
 		ns = s.config.TargetNamespace
 
-		s.log.V(1).Info("Replace query namespace with", ns)
+		s.log.V(1).Info("Replace query namespace", "ns", ns)
 	}
 
 	ScheduleList := v1alpha1.ScheduleList{}

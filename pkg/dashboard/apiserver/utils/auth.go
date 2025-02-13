@@ -23,7 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/chaos-mesh/chaos-mesh/pkg/clientpool"
-	config "github.com/chaos-mesh/chaos-mesh/pkg/config/dashboard"
+	config "github.com/chaos-mesh/chaos-mesh/pkg/config"
 	"github.com/chaos-mesh/chaos-mesh/pkg/log"
 	"github.com/chaos-mesh/chaos-mesh/pkg/mock"
 )
@@ -47,7 +47,7 @@ func AuthMiddleware(c *gin.Context, config *config.ChaosDashboardConfig) {
 	if ns == "" && !config.ClusterScoped && config.TargetNamespace != "" {
 		ns = config.TargetNamespace
 
-		log.L().WithName("auth middleware").V(1).Info("Replace query namespace with", ns)
+		log.L().WithName("auth middleware").V(1).Info("Replace query namespace", "ns", ns)
 	}
 
 	verb := "list"

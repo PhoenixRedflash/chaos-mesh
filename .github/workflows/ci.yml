@@ -1,6 +1,6 @@
 # This workflow defines the go and ui related jobs.
 #
-# First, we use [dorny/paths-filter@v2](https://github.com/dorny/paths-filter) to
+# First, we use [dorny/paths-filter@v3](https://github.com/dorny/paths-filter) to
 # detect changes in go and ui related files, and then run the corresponding sub-jobs
 # based on the changes.
 #
@@ -30,7 +30,7 @@ jobs:
       ui: ${{ steps.filter.outputs.ui }}
     steps:
       # For pull requests it's not necessary to checkout the code
-      - uses: dorny/paths-filter@v2
+      - uses: dorny/paths-filter@v3
         id: filter
         with:
           filters: |
@@ -40,7 +40,7 @@ jobs:
               - '**.go'
               - 'helm/**'
             ui:
-              - 'ui/yarn.lock'
+              - 'ui/pnpm-lock.yaml'
               - '**.js'
               - '**.ts?(x)'
   go:
@@ -54,9 +54,9 @@ jobs:
           - verify
           - build
           - test
-    runs-on: ${{ fromJson('{"amd64":"ubuntu-20.04", "arm64":["self-hosted", "Linux", "ARM64"]}')[matrix.arch] }}
+    runs-on: ${{ fromJson('{"amd64":"ubuntu-20.04", "arm64":"github-arm64-2c-8gb"}')[matrix.arch] }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Build Chaos Mesh Build Env
         env:
@@ -88,16 +88,21 @@ jobs:
         run: |
           if [[ "$job" == "verify" ]]; then
             make check
-            echo "Please make check before creating a PR"
-            git diff --quiet -- . || (git diff | cat && false)
+            echo "Please run [make check] before creating a PR"
+            git diff --quiet
           elif [[ "$job" == "build" ]]; then
             make image
           elif [[ "$job" == "test" ]]; then
-            ROOT=$(pwd)
-            KUBEBUILDER_ASSETS=${ROOT}/output/bin/kubebuilder/bin make test
+            make test
           else
             make $job
           fi
+
+      - name: Upload Code Coverage
+        uses: codecov/codecov-action@v5
+        if: matrix.job == 'test'
+        with:
+          files: ./cover.out
   ui:
     needs: changes
     if: ${{ needs.changes.outputs.ui == 'true' }}
@@ -109,32 +114,33 @@ jobs:
         job:
           - build
           - test
-        # node-version: ["14"] # TODO: add nodejs-16?
-    runs-on: "ubuntu-20.04"
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v2
         with:
-          node-version: 14
-          cache: "yarn"
-          cache-dependency-path: "ui/yarn.lock"
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+          cache-dependency-path: "ui/pnpm-lock.yaml"
 
-      - name: Install dependencies
-        run: yarn --frozen-lockfile
+      - run: pnpm install --frozen-lockfile
 
-      - name: Cache app build
+      - name: Cache app/build
         if: ${{ matrix.job == 'build' }}
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ./ui/app/build
-          key: ${{ runner.os }}-yarn-${{ hashFiles('ui/yarn.lock') }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('ui/pnpm-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-yarn-
+            ${{ runner.os }}-pnpm-
 
-      - name: Try build
+      - name: Build app
         if: ${{ matrix.job == 'build' }}
-        run: yarn build
+        run: pnpm build
 
-      - name: Run UT
+      - name: Run tests
         if: ${{ matrix.job == 'test' }}
-        run: yarn test
+        run: pnpm test

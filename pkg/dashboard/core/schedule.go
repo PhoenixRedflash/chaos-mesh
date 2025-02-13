@@ -58,18 +58,18 @@ type ScheduleStore interface {
 // Schedule represents a schedule instance. Use in db.
 type Schedule struct {
 	ScheduleMeta
-	Schedule string `gorm:"size:4096"` // JSON string
+	Schedule string `gorm:"type:text;size:32768"` // JSON string
 }
 
 // ScheduleMeta defines the metadata of a schedule instance. Use in db.
 type ScheduleMeta struct {
 	gorm.Model
-	UID        string    `gorm:"index:schedule_uid" json:"uid"`
-	Kind       string    `json:"kind"`
-	Name       string    `json:"name"`
-	Namespace  string    `json:"namespace"`
-	Action     string    `json:"action"`
-	StartTime  time.Time `json:"start_time"`
-	FinishTime time.Time `json:"finish_time"`
-	Archived   bool      `json:"archived"`
+	UID        string     `gorm:"index:schedule_uid" json:"uid"`
+	Kind       string     `json:"kind"`
+	Name       string     `json:"name"`
+	Namespace  string     `json:"namespace"`
+	Action     string     `json:"action"`
+	StartTime  time.Time  `json:"start_time"`
+	FinishTime *time.Time `json:"finish_time"`
+	Archived   bool       `json:"archived"`
 }

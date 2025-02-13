@@ -23,8 +23,10 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	authv1 "k8s.io/api/authorization/v1"
+	authnv1 "k8s.io/api/authentication/v1"
+	authzv1 "k8s.io/api/authorization/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	authorizationv1 "k8s.io/client-go/kubernetes/typed/authorization/v1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
@@ -60,11 +62,12 @@ type AuthValidator struct {
 }
 
 // NewAuthValidator returns a new AuthValidator
-func NewAuthValidator(enabled bool, authCli *authorizationv1.AuthorizationV1Client,
+func NewAuthValidator(enabled bool, authCli *authorizationv1.AuthorizationV1Client, decoderScheme *runtime.Scheme,
 	clusterScoped bool, targetNamespace string, enableFilterNamespace bool, logger logr.Logger) *AuthValidator {
 	return &AuthValidator{
 		enabled:               enabled,
 		authCli:               authCli,
+		decoder:               admission.NewDecoder(decoderScheme),
 		clusterScoped:         clusterScoped,
 		targetNamespace:       targetNamespace,
 		enableFilterNamespace: enableFilterNamespace,
@@ -101,7 +104,7 @@ func (v *AuthValidator) Handle(ctx context.Context, req admission.Request) admis
 	requireClusterPrivileges, affectedNamespaces := affectedNamespaces(chaos)
 
 	if requireClusterPrivileges {
-		allow, err := v.auth(username, groups, "", requestKind)
+		allow, err := v.auth(req.UserInfo, "", requestKind)
 		if err != nil {
 			return admission.Errored(http.StatusBadRequest, err)
 		}
@@ -114,7 +117,7 @@ func (v *AuthValidator) Handle(ctx context.Context, req admission.Request) admis
 		v.logger.Info("start validating user", "user", username, "groups", groups, "namespace", affectedNamespaces)
 
 		for namespace := range affectedNamespaces {
-			allow, err := v.auth(username, groups, namespace, requestKind)
+			allow, err := v.auth(req.UserInfo, namespace, requestKind)
 			if err != nil {
 				return admission.Errored(http.StatusBadRequest, err)
 			}
@@ -130,30 +133,24 @@ func (v *AuthValidator) Handle(ctx context.Context, req admission.Request) admis
 	return admission.Allowed("")
 }
 
-// AuthValidator implements admission.DecoderInjector.
-// A decoder will be automatically injected.
-
-// InjectDecoder injects the decoder.
-func (v *AuthValidator) InjectDecoder(d *admission.Decoder) error {
-	v.decoder = d
-	return nil
-}
-
-func (v *AuthValidator) auth(username string, groups []string, namespace string, chaosKind string) (bool, error) {
+func (v *AuthValidator) auth(userInfo authnv1.UserInfo, namespace string, chaosKind string) (bool, error) {
 	resourceName, err := v.resourceFor(chaosKind)
 	if err != nil {
 		return false, err
 	}
-	sar := authv1.SubjectAccessReview{
-		Spec: authv1.SubjectAccessReviewSpec{
-			ResourceAttributes: &authv1.ResourceAttributes{
+
+	sar := authzv1.SubjectAccessReview{
+		Spec: authzv1.SubjectAccessReviewSpec{
+			ResourceAttributes: &authzv1.ResourceAttributes{
 				Namespace: namespace,
 				Verb:      "create",
 				Group:     "chaos-mesh.org",
 				Resource:  resourceName,
 			},
-			User:   username,
-			Groups: groups,
+			User:   userInfo.Username,
+			UID:    userInfo.UID,
+			Groups: userInfo.Groups,
+			Extra:  convertExtra(userInfo.Extra),
 		},
 	}
 
@@ -178,4 +175,16 @@ func contains(arr []string, target string) bool {
 		}
 	}
 	return false
+}
+
+func convertExtra(in map[string]authnv1.ExtraValue) map[string]authzv1.ExtraValue {
+	if in == nil {
+		return nil
+	}
+	// map from authentication and authorization types
+	extra := make(map[string]authzv1.ExtraValue)
+	for key, value := range in {
+		extra[key] = authzv1.ExtraValue(value)
+	}
+	return extra
 }
